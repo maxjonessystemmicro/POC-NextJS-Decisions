@@ -18,14 +18,13 @@ function Dashboard() {
 
     function Clear() {
         setExpectedPayload({UserEmail:null,Message:'Empty',LastUpdate:null,LastUpdatedBy:null,ReturnSession: null});
-        sessionStorage.setItem("ExpectedPayload", JSON.stringify({UserEmail:null,Message:null,LastUpdate:null,LastUpdatedBy:null,ReturnSession: null}));
+        localStorage.setItem("ExpectedPayload", JSON.stringify({UserEmail:null,Message:null,LastUpdate:null,LastUpdatedBy:null,ReturnSession: null}));
 
     }
 
     function Save(e) {
         setExpectedPayload({UserEmail:null,Message:CustomMessage,LastUpdate:null,LastUpdatedBy:null,ReturnSession: null});
-
-        sessionStorage.setItem("ExpectedPayload", JSON.stringify({UserEmail:null,Message:CustomMessage,LastUpdate:null,LastUpdatedBy:null,ReturnSession: null}));
+        localStorage.setItem("ExpectedPayload", JSON.stringify({UserEmail:null,Message:CustomMessage,LastUpdate:null,LastUpdatedBy:null,ReturnSession: null}));
      
     }
 
@@ -33,10 +32,13 @@ function Dashboard() {
         setCustomMessage(e.target.value);
     }
 
+    function backButton(e){
+        window.history.back();
+    }
+
     function SyncSession(){
-        let Payload = JSON.parse(window.sessionStorage.getItem("ExpectedPayload"));
+        let Payload = JSON.parse(window.localStorage.getItem("ExpectedPayload"));
         if(Payload){
-      
             setExpectedPayload(Payload);
         }else{
             setExpectedPayload( {UserEmail:null,Message:'NOT FOUND',LastUpdate:null,LastUpdatedBy:null,ReturnSession: null});
@@ -56,7 +58,7 @@ function Dashboard() {
                 <button className={styles.buttonGreen} onClick={(e) => Save(e)}>Save</button>
             </div>
             <div className={styles.buttonDiv}>
-                <button className={styles.button}>Return</button>
+                <button className={styles.button} onClick={(e) => backButton(e)} >Return</button>
                 <button className={styles.button} onClick={() => SyncSession()}>Fetch Session</button>
                 <button className={styles.button} onClick={() => Clear()}>Clear</button>
             </div>
