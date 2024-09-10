@@ -39,9 +39,12 @@ function Dashboard() {
     function SyncSession(){
         let Payload = JSON.parse(window.localStorage.getItem("ExpectedPayload"));
         if(Payload){
+         
             setExpectedPayload(Payload);
+            console.log("found payload",Payload);
         }else{
             setExpectedPayload( {UserEmail:null,Message:'NOT FOUND',LastUpdate:null,LastUpdatedBy:null,ReturnSession: null});
+            console.log("not found payload");
         }
     }
 
