@@ -4,9 +4,9 @@ document.querySelectorAll('label').forEach(function (item) {
         console.log(item.innerText);
 
 
-        localStorage.setItem("ExpectedPayload", JSON.stringify({UserEmail:null,Message:item.innerText,LastUpdate:null,LastUpdatedBy:null,ReturnSession: null}));
-        sessionStorage.setItem("ExpectedPayload", JSON.stringify({UserEmail:null,Message:item.innerText,LastUpdate:null,LastUpdatedBy:null,ReturnSession: null}));
-        document.cookie = "message="+item.innerText;
+        // localStorage.setItem("ExpectedPayload", JSON.stringify({UserEmail:null,Message:item.innerText,LastUpdate:null,LastUpdatedBy:null,ReturnSession: null}));
+        // sessionStorage.setItem("ExpectedPayload", JSON.stringify({UserEmail:null,Message:item.innerText,LastUpdate:null,LastUpdatedBy:null,ReturnSession: null}));
+        document.cookie = "message="+item.innerText+"; SameSite=None; Secure";
         // cookies
     }
 });
