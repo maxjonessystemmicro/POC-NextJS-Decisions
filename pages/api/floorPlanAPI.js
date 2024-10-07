@@ -7,7 +7,7 @@ export default async function handler(req, res) {
       const response = await fetch("https://decisions-systemmicro.ca/Primary/restapi/Flow/01J99WNWK3A2RXS9SMGA1789WW", {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json", 
+          "Content-Type": "application/json", "guest": "true", "outputtype":"Json"
         },
         // Include the guest parameter in the request body
         body: JSON.stringify({ guest: true, outputtype:"Json", ...req.body }),

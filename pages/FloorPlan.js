@@ -11,7 +11,6 @@ import {
   Rect,
 } from "react-konva";
 
-// Dynamically import Konva components to avoid SSR issues
 const DynamicStage = dynamic(
   () => import("react-konva").then((mod) => mod.Stage),
   { ssr: false }
@@ -22,7 +21,7 @@ const DynamicLayer = dynamic(
 );
 
 const gridSize = 20;
-const PLOT_CONFIG = { width: 50, height: 45 };
+const PLOT_CONFIG = { width: 54, height: 38 };
 
 const SingleFloorPlan = () => {
   const [floorPlan, setFloorPlan] = useState(null);
@@ -69,49 +68,19 @@ const SingleFloorPlan = () => {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
-
-      const FloorPlan1 = urlParams.get("FloorPlan");
+      const FloorPlans = urlParams.get("FloorPlan");
       const Rooms = urlParams.get("Rooms");
       const Desks = urlParams.get("Desks");
 
-      if (!FloorPlan1) {
-        setFloorPlan(null);
-        setCustomVertices([]);
-        setRooms([]);
-        setCurrentRoom([]);
-        setSelectedRoom(null);
-        setRoomColors({});
+      if (!FloorPlans) {
         setType("complete");
-        setDesks([]);
-        setCurrentDesk([]);
-        setSelectedDesk(null);
-
-        setDeskColors({});
-        setDeskIndex(1);
-        setRoomIndex(1);
-        sessionStorage.removeItem("FloorPlanData");
-        sessionStorage.removeItem("GridSize");
-        sessionStorage.removeItem("GridHeight");
-        sessionStorage.removeItem("GridWidth");
-        sessionStorage.removeItem("ImageData");
-        sessionStorage.removeItem("ImagePosition");
-        sessionStorage.removeItem("IsComplete");
-        sessionStorage.removeItem("Rooms");
-        sessionStorage.removeItem("Desks");
-      }else{
-        setType("comm");
       }
 
       try {
-        const parsedFloorPlan = JSON.parse(FloorPlan1);
+        const parsedFloorPlan = JSON.parse(FloorPlans);
         const parsedRooms = JSON.parse(Rooms);
         const parsedDesks = JSON.parse(Desks);
 
-
-        console.log(parsedDesks);
-       
-
-       
         setFloorPlan({
           ID: parsedFloorPlan.ID,
           Vertices: parsedFloorPlan.Vertices,
@@ -119,23 +88,26 @@ const SingleFloorPlan = () => {
           floorName: parsedFloorPlan.FloorPlan_Name,
           floorNumber: parsedFloorPlan.Floor_Number,
         });
+
         setFloorName(parsedFloorPlan.FloorPlan_Name);
         setFloorNumber(parsedFloorPlan.Floor_Number);
-        setGridSizeValue(20);
+        setGridSizeValue(parsedFloorPlan.Grid_Size);
         setPlotHeight(parsedFloorPlan.Grid_Height);
         setPlotWidth(parsedFloorPlan.Grid_Width);
         setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
         setRooms(parsedRooms);
+        setDesks(parsedDesks);
 
-        if(parsedRooms){
-          if (parsedRooms.length > 0) {
-            parsedRooms.forEach((room, index) => {
-              room.Internal_ID = index;
-            });
-          }
+        if (parsedRooms) {
+          parsedRooms.forEach((room, index) => {
+            room.Internal_ID = index;
+          });
         }
-
-        
+        if (parsedDesks.length > 0) {
+          parsedDesks.forEach((desk, index) => {
+            desk.Internal_ID = index;
+          });
+        }
 
         const newRoomColors = {};
         parsedRooms.forEach((room) => {
@@ -143,26 +115,16 @@ const SingleFloorPlan = () => {
         });
         setRoomColors(newRoomColors);
 
-        if (parsedDesks) {
-          setDesks(parsedDesks);
-          const newDeskColors = {};
-          parsedDesks.forEach((desk) => {
-            newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
-          });
-      
-            if (parsedDesks.length > 0) {
-              parsedDesks.forEach((desk, index) => {
-                desk.Internal_ID = index;
-              });
-            }
-          
-          setDeskColors(newDeskColors);
-        }
+        const newDeskColors = {};
+        parsedDesks.forEach((desk) => {
+          newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
+        });
+        setDeskColors(newDeskColors);
       } catch (error) {
-        console.log("Data is not JSON or is invalid JSON",error);
+        console.log("Data is not JSON or is invalid JSON", error);
       }
     } else {
-      console.log("No data parameter found in URL");
+      console.log("Nodata parameter found in URL");
     }
   }, []);
 
@@ -174,55 +136,11 @@ const SingleFloorPlan = () => {
   };
 
   const completeFloor = async () => {
-    if (type === "complete") {
-      if (desks.length > 0) {
-        try {
-          const response = await fetch("/api/floorPlanAPI", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              FloorPlan: {
-                Internal_ID: 1,
-                FloorPlan_Name: floorName,
-                Floor_Number: floorNumber,
-                Creater_Account_ID: Creater_Account_ID,
-                Start_Shape_Position: floorPlan.startShapePosition,
-                Vertices: floorPlan.Vertices,
-                Grid_Size: gridSizeValue,
-                Grid_Height: plotHeight,
-                Grid_Width: plotWidth,
-                FloorPlan_Image: {
-                  Id: "fakeID",
-                  FileName: "FakeFileName.png",
-                  Contents: "FAKE",
-                },
-                FloorPlan_Image_Position: imagePosition,
-              },
-              Rooms: rooms,
-              Desks: desks,
-            }),
-          });
-
-          const responseText = await response.text();
-
-          if (!response.ok) {
-            throw new Error(
-              `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
-            );
-          }
-        } catch (error) {
-          console.error("Error creating floor plan:", error);
-          alert(
-            "An error occurred while completing the floor plan. Please check the console for more details."
-          );
-        }
-      }
-    } else {
-      if (desks.length > 0) {
-        try {
-          const response = await fetch("/api/editAPI", {
+    if (desks && floorName) {
+      try {
+        const response = await fetch(
+          type === "complete" ? "/api/floorPlanAPI" : "/api/editAPI",
+          {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -249,21 +167,21 @@ const SingleFloorPlan = () => {
               Rooms: rooms,
               Desks: desks,
             }),
-          });
-
-          const responseText = await response.text();
-
-          if (!response.ok) {
-            throw new Error(
-              `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
-            );
           }
-        } catch (error) {
-          console.error("Error creating floor plan:", error);
-          alert(
-            "An error occurred while completing the floor plan. Please check the console for more details."
+        );
+
+        const responseText = await response.text();
+
+        if (!response.ok) {
+          throw new Error(
+            `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
           );
         }
+      } catch (error) {
+        console.error("Error creating floor plan:", error);
+        alert(
+          "An error occurred while completing the floor plan. Please check the console for more details."
+        );
       }
     }
   };
@@ -344,7 +262,6 @@ const SingleFloorPlan = () => {
         }
       });
     } else {
-      // Check if clicked on a room or desk
       const clickedRoom = rooms.find((room) =>
         isPointInPolygon(clickedPosition, room.Vertices)
       );
@@ -383,7 +300,7 @@ const SingleFloorPlan = () => {
           id: null,
           floorPlanId: floorPlan.ID,
           Vertices: Vertices,
-          Internal_ID: DeskIndex,
+          Internal_ID: parseInt(DeskIndex) + 1,
           Room_Id: selectedRoom ? selectedRoom.Internal_ID : null,
         };
         setDesks((prevDesks) => [...prevDesks, newDesk]);
@@ -397,7 +314,6 @@ const SingleFloorPlan = () => {
     }
   };
 
-  // Convert desk squares to Vertices
   const squaresToVertices = (squares) => {
     const minX = Math.min(...squares.map((s) => s.x));
     const minY = Math.min(...squares.map((s) => s.y));
@@ -442,17 +358,6 @@ const SingleFloorPlan = () => {
     } while (x !== minX || y !== minY);
 
     return Vertices;
-  };
-
-  const saveFloorPlan = () => {
-    sessionStorage.setItem("FloorPlanData", JSON.stringify(floorPlan));
-    sessionStorage.setItem("GridSize", JSON.stringify(gridSize));
-    sessionStorage.setItem("GridHeight", JSON.stringify(plotHeight));
-    sessionStorage.setItem("GridWidth", JSON.stringify(plotWidth));
-    sessionStorage.setItem("ImagePosition", JSON.stringify(imagePosition));
-    sessionStorage.setItem("Rooms", JSON.stringify(rooms));
-    sessionStorage.setItem("Desks", JSON.stringify(desks));
-    alert("Floor plan saved!");
   };
 
   const resetFloorPlan = () => {
@@ -664,585 +569,736 @@ const SingleFloorPlan = () => {
       }
     }
   };
-
-  
   return (
-    <div style={{ display: "flex", height: "100vh", width: "100vw" }}>
-      <div
-        style={{
-          flex: "2",
-          position: "relative",
-          overflow: "hidden",
-          backgroundColor: "white",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ border: "5px solid black" }}>
-          <DynamicStage
-            width={plotWidth}
-            height={plotHeight}
-            onMouseDown={handleStageClick}
-            onMouseMove={handleDeskDragMove}
-            onMouseUp={handleDeskDragEnd}
-            ref={stageRef}
-          >
-            <DynamicLayer>
-              {imageObj && (
-                <KonvaImage
-                  image={imageObj}
-                  x={imagePosition.x}
-                  y={imagePosition.y}
-                  {...scaleImage(imageObj)}
-                  opacity={imageOpacity}
-                />
-              )}
-              {/* Render grid lines */}
-              {Array.from({ length: plotWidth / gridSizeValue }).map((_, i) => (
-                <Line
-                  key={`vertical-${i}`}
-                  points={[i * gridSizeValue, 0, i * gridSizeValue, plotHeight]}
-                  stroke="gray"
-                  strokeWidth={0.5}
-                  opacity={gridOpacity}
-                />
-              ))}
-              {Array.from({ length: plotHeight / gridSizeValue }).map(
-                (_, i) => (
-                  <Line
-                    key={`horizontal-${i}`}
-                    points={[
-                      0,
-                      i * gridSizeValue,
-                      plotWidth,
-                      i * gridSizeValue,
-                    ]}
-                    stroke="gray"
-                    strokeWidth={0.5}
-                    opacity={gridOpacity}
-                  />
-                )
-              )}
-              {/* Render floor plan */}
-              {floorPlan && (
-                <Shape
-                  sceneFunc={(context) => {
-                    context.beginPath();
-                    floorPlan.Vertices.forEach((vertex, idx) => {
-                      idx === 0
-                        ? context.moveTo(vertex.x, vertex.y)
-                        : context.lineTo(vertex.x, vertex.y);
-                    });
-                    context.closePath();
-                    context.fillStyle = `rgba(173, 216, 230, ${floorPlanOpacity})`;
-                    context.fill();
-                    context.strokeStyle = "blue";
-                    context.stroke();
-                  }}
-                />
-              )}
-              {/* Render custom Vertices */}
-              {customVertices.map((vertex, index) => (
-                <Circle
-                  key={index}
-                  x={vertex.x}
-                  y={vertex.y}
-                  radius={5}
-                  fill="blue"
-                />
-              ))}
-              {customVertices.map((vertex, index) => {
-                if (index < customVertices.length - 1) {
-                  return (
-                    <Line
-                      key={`line-${index}`}
-                      points={[
-                        vertex.x,
-                        vertex.y,
-                        customVertices[index + 1].x,
-                        customVertices[index + 1].y,
-                      ]}
-                      stroke="blue"
-                      strokeWidth={2}
-                    />
-                  );
-                }
-                return null;
-              })}
-              {/* Render rooms */}
-              {rooms.map((room) => (
-                <Shape
-                  key={`room-${room.Internal_ID}`}
-                  sceneFunc={(context) => {
-                    context.beginPath();
-                    room.Vertices.forEach((vertex, idx) => {
-                      idx === 0
-                        ? context.moveTo(vertex.x, vertex.y)
-                        : context.lineTo(vertex.x, vertex.y);
-                    });
-                    context.closePath();
-                    context.fillStyle =
-                      room === selectedRoom
-                        ? `${roomColors[room.Internal_ID]}CC`
-                        : `${roomColors[room.Internal_ID]}${Math.round(
-                            roomOpacity * 255
-                          )
-                            .toString(16)
-                            .padStart(2, "0")}`;
-                    context.fill();
-                    context.strokeStyle =
-                      room === selectedRoom ? "blue" : "black";
-                    context.stroke();
-                  }}
-                />
-              ))}
-              {/* Render current room being drawn */}
-              {currentRoom.map((vertex, index) => (
-                <Circle
-                  key={`current-room-point-${index}`}
-                  x={vertex.x}
-                  y={vertex.y}
-                  radius={5}
-                  fill="green"
-                />
-              ))}
-              {currentRoom.map((vertex, index) => {
-                if (index < currentRoom.length - 1) {
-                  return (
-                    <Line
-                      key={`current-room-line-${index}`}
-                      points={[
-                        vertex.x,
-                        vertex.y,
-                        currentRoom[index + 1].x,
-                        currentRoom[index + 1].y,
-                      ]}
-                      stroke="green"
-                      strokeWidth={2}
-                    />
-                  );
-                }
-                return null;
-              })}
-              {/* Render desks */}
-              {desks.map((desk) => (
-                <Shape
-                  key={`desk-${desk.Internal_ID}`}
-                  sceneFunc={(context) => {
-                    context.beginPath();
-                    desk.Vertices.forEach((vertex, idx) => {
-                      idx === 0
-                        ? context.moveTo(vertex.x, vertex.y)
-                        : context.lineTo(vertex.x, vertex.y);
-                    });
-                    context.closePath();
-                    context.fillStyle =
-                      desk.Internal_ID === selectedDesk?.Internal_ID
-                        ? `${deskColors[desk.Internal_ID]}CC`
-                        : `${deskColors[desk.Internal_ID]}${Math.round(
-                            deskOpacity * 255
-                          )
-                            .toString(16)
-                            .padStart(2, "0")}`;
-                    context.fill();
-                    context.strokeStyle = "black";
-                    context.stroke();
-                  }}
-                  onClick={() => setSelectedDesk(desk)}
-                />
-              ))}
-              {/* Render current desk being added */}
-              {currentDesk.map((square, index) => (
-                <Rect
-                  key={`current-desk-square-${index}`}
-                  x={square.x}
-                  y={square.y}
-                  width={gridSizeValue}
-                  height={gridSizeValue}
-                  fill="black"
-                  opacity={0.5}
-                />
-              ))}
-
-              {/* Render red dot for desk movement */}
-              {selectedDesk && (
-                <Circle
-                  x={selectedDesk.Vertices[0].x}
-                  y={selectedDesk.Vertices[0].y}
-                  radius={5}
-                  fill="red"
-                  draggable
-                  onDragStart={handleDeskDragStart}
-                  onDragMove={handleDeskDragMove}
-                  onDragEnd={handleDeskDragEnd}
-                />
-              )}
-            </DynamicLayer>
-          </DynamicStage>
-        </div>
+    <div
+      style={{
+        backgroundColor: "white",
+        display: "flex",
+        fontFamily: "Nunito, sans-serif",
+      }}
+    >
+      <div style={{ width: "270px", backgroundColor: "#25316F" }}>
+        {/* Sidebar content */}
       </div>
-      {/* Control panel */}
+
       <div
         style={{
-          flex: "1",
+          flex: 2,
           display: "flex",
           flexDirection: "column",
-          color: "white",
-          margin: 0,
-          backgroundColor: "grey",
-          height: "100%",
-          overflowY: "auto",
-          borderLeft: "5px black solid",
+          height: "100vh",
+          width: "100vw",
         }}
       >
-        {/* Selected item info */}
-        <div style={{ width: "100%", height: "175px", padding: "15px" }}>
-          <div style={{ color: "white" }}>
-            <div style={{ margin: "10px 0", marginTop: "0px" }}>
-              <label
-                style={{ color: "white", fontSize: "20px", fontWeight: "bold" }}
-              >
-                Floor Plan Designer
-              </label>
-            </div>
-            <div style={{ margin: "10px 0", marginTop: "0px" }}>
-              <label style={{ color: "white" }}>Name: </label>
-              <input
-                value={floorName}
-                onChange={handleFloorName}
-                style={{ width: "150px", marginLeft: "5px", color: "black" }}
-              />
-            </div>
-            <div style={{ margin: "10px 0" }}>
-              <label style={{ color: "white" }}>Floor: </label>
-              <input
-                type="number"
-                value={floorNumber}
-                onChange={handleFloorNumber}
-                style={{ width: "150px", marginLeft: "10px", color: "black" }}
-              />
-            </div>
-
-            <h3>Selected Item:</h3>
-            {selectedRoom && <p>Room ID: {selectedRoom.Internal_ID}</p>}
-            {selectedDesk && <p>Desk ID: {selectedDesk.Internal_ID}</p>}
-          </div>
-        </div>
-        {/* Floor plan design controls */}
-        <div
-          style={{ width: "100%", backgroundColor: "navy", padding: "15px" }}
-        >
-          <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>
-            Design Layout
-          </h2>
-          <button
-            onClick={toggleCustomRoom}
-            style={{
-              backgroundColor: "green",
-              color: "white",
-              padding: "10px",
-              marginRight: "10px",
-            }}
-            disabled={floorPlan || isDrawingRoom || isAddingDesk}
-          >
-            Draw Floorplan
-          </button>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            style={{ marginRight: "10px" }}
-            disabled={isDrawingRoom || isAddingDesk}
-          />
-          <div
-            style={{ display: "flex", alignItems: "center", margin: "10px 0" }}
-          >
-            <div style={{ marginRight: "15px" }}>
-              <label style={{ color: "white", marginRight: "5px" }}>
-                Grid Size:
-              </label>
-              <input
-                type="number"
-                value={gridSizeValue}
-                onChange={handleGridSizeChange}
-                style={{ width: "50px", color: "black" }}
-                disabled={isDrawingRoom || isAddingDesk || floorPlan}
-              />
-            </div>
-            <div style={{ marginRight: "15px" }}>
-              <label style={{ color: "white", marginRight: "5px" }}>
-                Height (ft):
-              </label>
-              <input
-                type="number"
-                value={plotHeight / gridSizeValue}
-                onChange={handleHeightChange}
-                style={{ width: "50px", color: "black" }}
-                disabled={isDrawingRoom || isAddingDesk || floorPlan}
-              />
-            </div>
-            <div>
-              <label style={{ color: "white", marginRight: "5px" }}>
-                Width (ft):
-              </label>
-              <input
-                type="number"
-                value={plotWidth / gridSizeValue}
-                onChange={handleWidthChange}
-                style={{ width: "50px", color: "black" }}
-                disabled={isDrawingRoom || isAddingDesk || floorPlan}
-              />
-            </div>
-          </div>
-        </div>
-        {/* Room design controls */}
-        <div style={{ width: "100%", backgroundColor: "red", padding: "15px" }}>
-          <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>Design Rooms</h2>
-          <button
-            onClick={toggleDrawRoom}
-            style={{
-              backgroundColor: isDrawingRoom ? "darkgreen" : "teal",
-              color: "white",
-              padding: "10px",
-              marginRight: "10px",
-            }}
-            disabled={!floorPlan || isAddingDesk}
-          >
-            {isDrawingRoom ? "Stop Drawing Room" : "Draw Room"}
-          </button>
-          {selectedRoom && (
-            <button
-              onClick={deleteSelectedRoom}
-              style={{
-                backgroundColor: "purple",
-                color: "white",
-                padding: "10px",
-                marginRight: "10px",
-              }}
-            >
-              Delete Room
-            </button>
-          )}
-          {(selectedRoom || selectedDesk) && (
-            <button
-              onClick={handleEditRoom}
-              style={{
-                backgroundColor: "green",
-                color: "white",
-                padding: "10px",
-                margin: "10px 0",
-              }}
-            >
-              Edit Room
-            </button>
-          )}
-        </div>
-        {/* Desk design controls */}
-        <div
-          style={{ width: "100%", backgroundColor: "purple", padding: "15px" }}
-        >
-          <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>Design Desks</h2>
-          <button
-            onClick={toggleAddDesk}
-            style={{
-              backgroundColor: isAddingDesk ? "darkblue" : "blue",
-              color: "white",
-              padding: "10px",
-              marginRight: "10px",
-            }}
-            disabled={!floorPlan || isDrawingRoom || !rooms.length}
-          >
-            {isAddingDesk ? "Stop Adding Desk" : "Add Desk"}
-          </button>
-          {selectedDesk && (
-            <button
-              onClick={deleteSelectedDesk}
-              disabled={!floorPlan || isDrawingRoom || !rooms.length}
-              style={{
-                backgroundColor: "purple",
-                color: "white",
-                padding: "10px",
-                marginRight: "10px",
-              }}
-            >
-              Delete Desk
-            </button>
-          )}
-        </div>
-        {/* Tools */}
         <div
           style={{
-            width: "100%",
-            padding: "15px",
-            marginTop: "0px",
-            marginBottom: "auto",
-            paddingBottom: "0px",
-          }}
-        >
-          {/* Image movement controls */}
-          <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>Tools</h2>
-          <div style={{ margin: "10px 0" }}>
-            <label style={{ color: "white" }}>Image Opacity: </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={imageOpacity}
-              onChange={(e) => setImageOpacity(parseFloat(e.target.value))}
-            />
-          </div>
-          <div style={{ margin: "10px 0" }}>
-            <label style={{ color: "white" }}>Grid Opacity: </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={gridOpacity}
-              onChange={(e) => setGridOpacity(parseFloat(e.target.value))}
-            />
-          </div>
-          <div style={{ margin: "10px 0" }}>
-            <label style={{ color: "white" }}>Floor Plan Fill Opacity: </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={floorPlanOpacity}
-              onChange={(e) => setFloorPlanOpacity(parseFloat(e.target.value))}
-            />
-          </div>
-          <div style={{ margin: "10px 0" }}>
-            <label style={{ color: "white" }}>Room Opacity: </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={roomOpacity}
-              onChange={(e) => setRoomOpacity(parseFloat(e.target.value))}
-            />
-          </div>
-          <div style={{ margin: "10px 0" }}>
-            <label style={{ color: "white" }}>Desk Opacity: </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={deskOpacity}
-              onChange={(e) => setDeskOpacity(parseFloat(e.target.value))}
-            />
-          </div>
-          <button
-            onClick={resetFloorPlan}
-            style={{
-              backgroundColor: "Orange",
-              color: "white",
-              padding: "10px",
-              marginRight: "10px",
-            }}
-            disabled={isDrawingRoom || isAddingDesk}
-          >
-            Reset
-          </button>
-          <button
-            onClick={saveFloorPlan}
-            style={{
-              backgroundColor: "blue",
-              color: "white",
-              padding: "10px",
-              marginRight: "10px",
-            }}
-          >
-            Save
-          </button>
-
-          <button
-            onClick={() => moveImage(0, -0.1)}
-            style={{
-              margin: "5px",
-              padding: "10px",
-              background: "lightgrey",
-              border: "none",
-              borderRadius: "5px",
-            }}
-          >
-            ↑
-          </button>
-          <button
-            onClick={() => moveImage(0.1, 0)}
-            style={{
-              margin: "5px",
-              padding: "10px",
-              background: "lightgrey",
-              border: "none",
-              borderRadius: "5px",
-            }}
-          >
-            →
-          </button>
-          <button
-            onClick={() => moveImage(-0.1, 0)}
-            style={{
-              margin: "5px",
-              padding: "10px",
-              background: "lightgrey",
-              border: "none",
-              borderRadius: "5px",
-            }}
-          >
-            ←
-          </button>
-          <button
-            onClick={() => moveImage(0, 0.1)}
-            style={{
-              margin: "5px",
-              padding: "10px",
-              background: "lightgrey",
-              border: "none",
-              borderRadius: "5px",
-            }}
-          >
-            ↓
-          </button>
-        </div>
-
-        <div
-          style={{
+            height: "60px",
+            backgroundColor: "#384A8E",
+            borderLeft: "10px solid #0092D1",
             display: "flex",
-            justifyContent: "space-between",
-            height: "50px",
-            margin: "10px",
+            alignItems: "center", // Vertically center the content
+            paddingLeft: "20px", // Add some padding for left alignment
           }}
         >
-          <button
-            onClick={completeFloor}
+          <span
+            style={{ color: "white", fontSize: "20px", fontWeight: "bold" }}
+          >
+            Real Estate Management
+          </span>
+        </div>
+
+        <div style={{ flex: 1, display: "flex" }}>
+          <div
             style={{
-              backgroundColor: "blue",
-              color: "white",
-              padding: "15px",
-              flex: 1,
-              marginRight: "5px",
+              flex: "3",
+              position: "relative",
+              overflow: "hidden",
+              backgroundColor: "white",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
-            {type === "complete" ? "Complete" : "Save"}
-          </button>
-          <button
-            onClick={backButton}
+            <div
+              style={{
+                border: "3px solid #D6D6D6",
+                backgroundColor: "white",
+              }}
+            >
+              <DynamicStage
+                width={plotWidth}
+                height={plotHeight}
+                onMouseDown={handleStageClick}
+                onMouseMove={handleDeskDragMove}
+                onMouseUp={handleDeskDragEnd}
+                ref={stageRef}
+              >
+                <DynamicLayer>
+                  {imageObj && (
+                    <KonvaImage
+                      image={imageObj}
+                      x={imagePosition.x}
+                      y={imagePosition.y}
+                      {...scaleImage(imageObj)}
+                      opacity={imageOpacity}
+                    />
+                  )}
+                  {Array.from({ length: plotWidth / gridSizeValue }).map(
+                    (_, i) => (
+                      <Line
+                        key={`vertical-${i}`}
+                        points={[
+                          i * gridSizeValue,
+                          0,
+                          i * gridSizeValue,
+                          plotHeight,
+                        ]}
+                        stroke="gray"
+                        strokeWidth={0.5}
+                        opacity={gridOpacity}
+                      />
+                    )
+                  )}
+                  {Array.from({ length: plotHeight / gridSizeValue }).map(
+                    (_, i) => (
+                      <Line
+                        key={`horizontal-${i}`}
+                        points={[
+                          0,
+                          i * gridSizeValue,
+                          plotWidth,
+                          i * gridSizeValue,
+                        ]}
+                        stroke="gray"
+                        strokeWidth={0.5}
+                        opacity={gridOpacity}
+                      />
+                    )
+                  )}
+                  {floorPlan && (
+                    <Shape
+                      sceneFunc={(context) => {
+                        context.beginPath();
+                        floorPlan.Vertices.forEach((vertex, idx) => {
+                          idx === 0
+                            ? context.moveTo(vertex.x, vertex.y)
+                            : context.lineTo(vertex.x, vertex.y);
+                        });
+                        context.closePath();
+                        context.fillStyle = `rgba(173, 216, 230, ${floorPlanOpacity})`;
+                        context.fill();
+                        context.strokeWidth = 4;
+                        context.strokeStyle = "blue";
+
+                        context.stroke();
+                      }}
+                    />
+                  )}
+                  {customVertices.map((vertex, index) => (
+                    <Circle
+                      key={index}
+                      x={vertex.x}
+                      y={vertex.y}
+                      radius={5}
+                      fill="blue"
+                    />
+                  ))}
+                  {customVertices.map((vertex, index) => {
+                    if (index < customVertices.length - 1) {
+                      return (
+                        <Line
+                          key={`line-${index}`}
+                          points={[
+                            vertex.x,
+                            vertex.y,
+                            customVertices[index + 1].x,
+                            customVertices[index + 1].y,
+                          ]}
+                          stroke="blue"
+                          strokeWidth={2}
+                        />
+                      );
+                    }
+                    return null;
+                  })}
+                  {rooms.map((room) => (
+                    <Shape
+                      key={`room-${room.Internal_ID}`}
+                      sceneFunc={(context) => {
+                        context.beginPath();
+                        room.Vertices.forEach((vertex, idx) => {
+                          idx === 0
+                            ? context.moveTo(vertex.x, vertex.y)
+                            : context.lineTo(vertex.x, vertex.y);
+                        });
+                        context.closePath();
+                        context.fillStyle =
+                          room === selectedRoom
+                            ? `${roomColors[room.Internal_ID]}CC`
+                            : `${roomColors[room.Internal_ID]}${Math.round(
+                                roomOpacity * 255
+                              )
+                                .toString(16)
+                                .padStart(2, "0")}`;
+                        context.fill();
+                        context.strokeStyle =
+                          room === selectedRoom ? "blue" : "black";
+                        context.stroke();
+                      }}
+                    />
+                  ))}
+                  {currentRoom.map((vertex, index) => (
+                    <Circle
+                      key={`current-room-point-${index}`}
+                      x={vertex.x}
+                      y={vertex.y}
+                      radius={5}
+                      fill="green"
+                    />
+                  ))}
+                  {currentRoom.map((vertex, index) => {
+                    if (index < currentRoom.length - 1) {
+                      return (
+                        <Line
+                          key={`current-room-line-${index}`}
+                          points={[
+                            vertex.x,
+                            vertex.y,
+                            currentRoom[index + 1].x,
+                            currentRoom[index + 1].y,
+                          ]}
+                          stroke="green"
+                          strokeWidth={2}
+                        />
+                      );
+                    }
+                    return null;
+                  })}
+                  {desks.map((desk) => (
+                    <Shape
+                      key={`desk-${desk.Internal_ID}`}
+                      sceneFunc={(context) => {
+                        context.beginPath();
+                        desk.Vertices.forEach((vertex, idx) => {
+                          idx === 0
+                            ? context.moveTo(vertex.x, vertex.y)
+                            : context.lineTo(vertex.x, vertex.y);
+                        });
+                        context.closePath();
+                        context.fillStyle =
+                          desk.Internal_ID === selectedDesk?.Internal_ID
+                            ? `${deskColors[desk.Internal_ID]}CC`
+                            : `${deskColors[desk.Internal_ID]}${Math.round(
+                                deskOpacity * 255
+                              )
+                                .toString(16)
+                                .padStart(2, "0")}`;
+                        context.fill();
+                        context.strokeStyle = "black";
+                        context.stroke();
+                      }}
+                      onClick={() => setSelectedDesk(desk)}
+                    />
+                  ))}
+                  {currentDesk.map((square, index) => (
+                    <Rect
+                      key={`current-desk-square-${index}`}
+                      x={square.x}
+                      y={square.y}
+                      width={gridSizeValue}
+                      height={gridSizeValue}
+                      fill="black"
+                      opacity={0.5}
+                    />
+                  ))}
+                  {selectedDesk && (
+                    <Circle
+                      x={selectedDesk.Vertices[0].x}
+                      y={selectedDesk.Vertices[0].y}
+                      radius={5}
+                      fill="red"
+                      draggable
+                      onDragStart={handleDeskDragStart}
+                      onDragMove={handleDeskDragMove}
+                      onDragEnd={handleDeskDragEnd}
+                    />
+                  )}
+                </DynamicLayer>
+              </DynamicStage>
+            </div>
+          </div>
+          <div
             style={{
-              backgroundColor: "blue",
+              flex: "1",
+              display: "flex",
+              flexDirection: "column",
               color: "white",
-              padding: "15px",
-              flex: 1,
-              marginLeft: "5px",
+              margin: 0,
+              backgroundColor: "#25316F",
+              height: "100%",
+              overflowY: "auto",
             }}
           >
-            {type === "complete" ? "Cancel" : "Back"}
-          </button>
+            <div style={{ width: "100%", padding: "15px", paddingTop: "12px" }}>
+              <div style={{ color: "white", textAlign: "center" }}>
+                <label
+                  style={{
+                    color: "white",
+                    fontSize: "20px",
+                    fontWeight: "bold",
+                    display: "block",
+                    marginBottom: "10px",
+                  }}
+                >
+                  Floor Plan Designer
+                </label>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: "5px",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div style={{ marginRight: "15px" }}>
+                    <label style={{ color: "white", marginRight: "5px" }}>
+                      Name:{" "}
+                      <span
+                        style={{
+                          color: "red",
+                          display: floorName ? "none" : "inline",
+                        }}
+                      >
+                        *
+                      </span>
+                    </label>
+                    <input
+                      value={floorName}
+                      onChange={handleFloorName}
+                      style={{
+                        borderRadius: "5px",
+                        padding: "2px",
+                        width: "150px",
+                        color: "black",
+                        borderColor: floorName ? "initial" : "red",
+                        borderWidth: "1px",
+                        borderStyle: "solid",
+                      }}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={{ color: "white", marginRight: "5px" }}>
+                      Floor:
+                    </label>
+                    <input
+                      type="number"
+                      value={floorNumber}
+                      onChange={handleFloorNumber}
+                      style={{
+                        borderRadius: "5px",
+                        padding: "2px",
+                        width: "50px",
+                        color: "black",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "10px",
+                    paddingBottom: "25px",
+                    paddingTop: "20px",
+                  }}
+                >
+                  <div style={{ marginRight: "15px" }}>
+                    <label style={{ color: "white", marginRight: "5px" }}>
+                      Grid Size:
+                    </label>
+                    <input
+                      type="number"
+                      value={gridSizeValue}
+                      onChange={handleGridSizeChange}
+                      style={{
+                        width: "50px",
+                        color: "black",
+                        borderRadius: "5px",
+                        padding: "2px",
+                      }}
+                      disabled={isDrawingRoom || isAddingDesk || floorPlan}
+                    />
+                  </div>
+                  <div style={{ marginRight: "15px" }}>
+                    <label style={{ color: "white", marginRight: "5px" }}>
+                      Height (ft):
+                    </label>
+                    <input
+                      type="number"
+                      value={plotHeight / gridSizeValue}
+                      onChange={handleHeightChange}
+                      style={{
+                        width: "50px",
+                        color: "black",
+                        borderRadius: "5px",
+                        padding: "2px",
+                      }}
+                      disabled={isDrawingRoom || isAddingDesk || floorPlan}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ color: "white", marginRight: "5px" }}>
+                      Width (ft):
+                    </label>
+                    <input
+                      type="number"
+                      value={plotWidth / gridSizeValue}
+                      onChange={handleWidthChange}
+                      style={{
+                        width: "50px",
+                        color: "black",
+                        borderRadius: "5px",
+                        padding: "2px",
+                      }}
+                      disabled={isDrawingRoom || isAddingDesk || floorPlan}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={toggleCustomRoom}
+                  style={{
+                    backgroundColor: "green",
+                    color: "white",
+                    padding: "10px",
+                    width: "100%",
+                    borderRadius: "6px",
+                  }}
+                  disabled={
+                    !floorName || floorPlan || isDrawingRoom || isAddingDesk
+                  }
+                >
+                  Draw Floorplan
+                </button>
+              </div>
+            </div>
+
+            <div style={{ width: "100%", position: "relative" }}>
+              {!floorPlan && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(128, 128, 128, 0.5)",
+                    zIndex: 1,
+                    pointerEvents: "none", // Prevent interaction
+                  }}
+                />
+              )}
+
+              <div
+                style={{
+                  backgroundColor: "#384A8E",
+                  padding: "15px",
+                  zIndex: 0,
+                  paddingBottom: "10px",
+                }}
+              >
+                <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>
+                  Design Rooms
+                </h2>
+                <button
+                  onClick={toggleDrawRoom}
+                  style={{
+                    backgroundColor: isDrawingRoom ? "darkgreen" : "darkblue",
+                    color: "white",
+                    padding: "10px",
+                    marginRight: "10px",
+                    borderRadius: "6px",
+                    marginTop: "5px",
+                  }}
+                  disabled={!floorPlan || isAddingDesk}
+                >
+                  {isDrawingRoom ? "Stop Drawing Room" : "Draw Room"}
+                </button>
+                {selectedRoom && (
+                  <button
+                    onClick={deleteSelectedRoom}
+                    style={{
+                      backgroundColor: "purple",
+                      color: "white",
+                      padding: "10px",
+                      marginRight: "10px",
+                      borderRadius: "6px",
+                      marginTop: "5px",
+                    }}
+                  >
+                    Delete Room
+                  </button>
+                )}
+                {(selectedRoom || selectedDesk) && (
+                  <button
+                    onClick={handleEditRoom}
+                    style={{
+                      backgroundColor: "green",
+                      color: "white",
+                      padding: "10px",
+                      margin: "10px 0",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    Edit Room
+                  </button>
+                )}
+              </div>
+            </div>
+            <div style={{ width: "100%", position: "relative" }}>
+              {/* Grey overlay when disabled */}
+              {(!floorPlan || isDrawingRoom || !rooms.length) && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(128, 128, 128, 0.5)",
+                    zIndex: 1,
+                    pointerEvents: "none", // Prevent interaction
+                  }}
+                />
+              )}
+
+              <div
+                style={{
+                  backgroundColor: "#384A8E",
+                  padding: "15px",
+                  zIndex: 0,
+                }}
+              >
+                <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>
+                  Design Desks
+                </h2>
+                <button
+                  onClick={toggleAddDesk}
+                  style={{
+                    backgroundColor: isAddingDesk ? "blue" : "darkblue",
+                    color: "white",
+                    padding: "11px",
+                    marginRight: "10px",
+                    borderRadius: "6px",
+                  }}
+                  disabled={!floorPlan || isDrawingRoom || !rooms.length}
+                >
+                  {isAddingDesk ? "Stop Adding Desk" : "Add Desk"}
+                </button>
+                {selectedDesk && (
+                  <button
+                    onClick={deleteSelectedDesk}
+                    disabled={!floorPlan || isDrawingRoom || !rooms.length}
+                    style={{
+                      backgroundColor: "purple",
+                      color: "white",
+                      padding: "10px",
+                      marginRight: "10px",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    Delete Desk
+                  </button>
+                )}
+              </div>
+            </div>
+            <div
+              style={{
+                width: "100%",
+                padding: "15px",
+                marginTop: "0px",
+                marginBottom: "auto",
+                paddingBottom: "0px",
+              }}
+            >
+              <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>Tools</h2>
+              <div style={{ margin: "10px 0" }}>
+                <label style={{ color: "white" }}>Image Opacity: </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={imageOpacity}
+                  onChange={(e) => setImageOpacity(parseFloat(e.target.value))}
+                />
+              </div>
+              <div style={{ margin: "10px 0" }}>
+                <label style={{ color: "white" }}>Grid Opacity: </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={gridOpacity}
+                  onChange={(e) => setGridOpacity(parseFloat(e.target.value))}
+                />
+              </div>
+              <div style={{ margin: "10px 0" }}>
+                <label style={{ color: "white" }}>
+                  Floor Plan Fill Opacity:{" "}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={floorPlanOpacity}
+                  onChange={(e) =>
+                    setFloorPlanOpacity(parseFloat(e.target.value))
+                  }
+                />
+              </div>
+              <div style={{ margin: "10px 0" }}>
+                <label style={{ color: "white" }}>Room Opacity: </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={roomOpacity}
+                  onChange={(e) => setRoomOpacity(parseFloat(e.target.value))}
+                />
+              </div>
+              <div style={{ margin: "10px 0" }}>
+                <label style={{ color: "white" }}>Desk Opacity: </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={deskOpacity}
+                  onChange={(e) => setDeskOpacity(parseFloat(e.target.value))}
+                />
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ marginBottom: "20px",marginTop: "5px", width: "100%" }}
+                disabled={isDrawingRoom || isAddingDesk}
+              />
+
+              <button
+                onClick={resetFloorPlan}
+                style={{
+                  backgroundColor: "Orange",
+                  color: "white",
+                  padding: "10px",
+                  marginRight: "10px",
+                  borderRadius: "6px",
+                }}
+                disabled={isDrawingRoom || isAddingDesk}
+              >
+                Reset
+              </button>
+              <button
+                onClick={() => moveImage(0, -0.1)}
+                style={{
+                  margin: "5px",
+                  padding: "10px",
+                  background: "lightgrey",
+                  border: "none",
+                  borderRadius: "6px",
+                  lineHeight: "12px",
+                }}
+              >
+                ↑
+              </button>
+              <button
+                onClick={() => moveImage(0.1, 0)}
+                style={{
+                  margin: "5px",
+                  padding: "10px",
+                  background: "lightgrey",
+                  border: "none",
+                  borderRadius: "6px",
+                  lineHeight: "12px",
+                }}
+              >
+                →
+              </button>
+              <button
+                onClick={() => moveImage(-0.1, 0)}
+                style={{
+                  margin: "5px",
+                  padding: "10px",
+                  background: "lightgrey",
+                  border: "none",
+                  borderRadius: "6px",
+                  lineHeight: "12px",
+                }}
+              >
+                ←
+              </button>
+              <button
+                onClick={() => moveImage(0, 0.1)}
+                style={{
+                  margin: "5px",
+                  padding: "10px",
+                  background: "lightgrey",
+                  border: "none",
+                  borderRadius: "6px",
+                  lineHeight: "12px",
+                }}
+              >
+                ↓
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                height: "50px",
+                
+                margin: "15px",
+              }}
+            >
+              <button
+                onClick={completeFloor}
+                style={{
+                  backgroundColor: "darkblue",
+                  color: "white",
+                  padding: "15px",
+                  flex: 1,
+                  marginRight: "5px",
+                  borderRadius: "6px",
+                }}
+              >
+                {type === "complete" ? "Complete" : "Save"}
+              </button>
+              <button
+                onClick={backButton}
+                style={{
+                  backgroundColor: "darkblue",
+                  color: "white",
+                  padding: "15px",
+                  flex: 1,
+                  marginLeft: "5px",
+                  borderRadius: "6px",
+                }}
+              >
+                {type === "complete" ? "Cancel" : "Back"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
