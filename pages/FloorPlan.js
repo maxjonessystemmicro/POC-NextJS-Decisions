@@ -11,6 +11,7 @@ import {
   Rect,
 } from "react-konva";
 
+// Dynamically import Konva components to avoid server-side rendering issues
 const DynamicStage = dynamic(
   () => import("react-konva").then((mod) => mod.Stage),
   { ssr: false }
@@ -24,6 +25,7 @@ const gridSize = 20;
 const PLOT_CONFIG = { width: 54, height: 38 };
 
 const SingleFloorPlan = () => {
+  // State variables for managing floor plan data and UI states
   const [floorPlan, setFloorPlan] = useState(null);
   const [plotHeight, setPlotHeight] = useState(PLOT_CONFIG.height * gridSize);
   const [plotWidth, setPlotWidth] = useState(PLOT_CONFIG.width * gridSize);
@@ -60,6 +62,7 @@ const SingleFloorPlan = () => {
   const [Creater_Account_ID, setCreater_Account_ID] = useState(
     "01HGDVRVHW8YZ0KESEY6EPA71Q"
   );
+  
   let [RoomIndex, setRoomIndex] = useState(1);
   let [DeskIndex, setDeskIndex] = useState(1);
   const stageRef = useRef(null);
@@ -128,13 +131,16 @@ const SingleFloorPlan = () => {
     }
   }, []);
 
+  // Snap a value to the nearest grid point
   const snapToGrid = (value) =>
     Math.round(value / gridSizeValue) * gridSizeValue;
 
+  // Navigate back to the previous page
   const backButton = async () => {
     window.history.back();
   };
 
+  // Complete the floor plan and send data to the server
   const completeFloor = async () => {
     if (desks && floorName) {
       try {
@@ -176,6 +182,8 @@ const SingleFloorPlan = () => {
           throw new Error(
             `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
           );
+        } else {
+          alert("Successful!!");
         }
       } catch (error) {
         console.error("Error creating floor plan:", error);
@@ -186,6 +194,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Generate a random color
   const getRandomColor = () => {
     const letters = "0123456789ABCDEF";
     let color = "#";
@@ -195,6 +204,7 @@ const SingleFloorPlan = () => {
     return color;
   };
 
+  // Handle clicks on the stage
   const handleStageClick = (e) => {
     const stage = e.target.getStage();
     const mousePos = stage.getPointerPosition();
@@ -275,6 +285,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Toggle custom room drawing mode
   const toggleCustomRoom = () => {
     setIsCustomRoom(!isCustomRoom);
     if (!isCustomRoom) {
@@ -282,6 +293,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Toggle room drawing mode
   const toggleDrawRoom = () => {
     setIsDrawingRoom(!isDrawingRoom);
     setIsCustomRoom(false);
@@ -291,6 +303,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Toggle desk adding mode
   const toggleAddDesk = () => {
     setIsAddingDesk(!isAddingDesk);
     if (isAddingDesk) {
@@ -314,6 +327,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Convert squares to vertices for desk creation
   const squaresToVertices = (squares) => {
     const minX = Math.min(...squares.map((s) => s.x));
     const minY = Math.min(...squares.map((s) => s.y));
@@ -360,6 +374,7 @@ const SingleFloorPlan = () => {
     return Vertices;
   };
 
+  // Reset the floor plan to its initial state
   const resetFloorPlan = () => {
     setFloorPlan(null);
     setCustomVertices([]);
@@ -387,6 +402,7 @@ const SingleFloorPlan = () => {
     alert("Floor plan data cleared!");
   };
 
+  // Handle image upload and set the image object
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -404,6 +420,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Scale the image to fit within the plot dimensions
   const scaleImage = (img) => {
     const scale = Math.min(plotWidth / img.width, plotHeight / img.height);
     return {
@@ -412,6 +429,7 @@ const SingleFloorPlan = () => {
     };
   };
 
+  // Move the image by a specified delta
   const moveImage = (dx, dy) => {
     setImagePosition((prev) => ({
       x: prev.x + dx * gridSizeValue,
@@ -419,6 +437,7 @@ const SingleFloorPlan = () => {
     }));
   };
 
+  // Handle changes to the floor name
   const handleFloorName = (e) => {
     const newName = e.target.value;
     if (newName) {
@@ -426,6 +445,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Handle changes to the floor number
   const handleFloorNumber = (e) => {
     const newSize = parseInt(e.target.value);
     if (!isNaN(newSize)) {
@@ -433,6 +453,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Handle changes to the grid size
   const handleGridSizeChange = (e) => {
     const newSize = parseInt(e.target.value);
     if (!isNaN(newSize)) {
@@ -442,6 +463,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Handle changes to the plot height
   const handleHeightChange = (e) => {
     const newHeight = parseInt(e.target.value);
     if (!isNaN(newHeight)) {
@@ -449,6 +471,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Handle changes to the plot width
   const handleWidthChange = (e) => {
     const newWidth = parseInt(e.target.value);
     if (!isNaN(newWidth)) {
@@ -456,6 +479,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Delete the selected room
   const deleteSelectedRoom = () => {
     if (selectedRoom) {
       setRooms((prevRooms) =>
@@ -470,6 +494,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Delete the selected desk
   const deleteSelectedDesk = () => {
     if (selectedDesk) {
       setDesks((prevDesks) =>
@@ -481,6 +506,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Check if a point is inside a polygon
   const isPointInPolygon = (point, Vertices) => {
     let inside = false;
     for (let i = 0, j = Vertices.length - 1; i < Vertices.length; j = i++) {
@@ -496,6 +522,7 @@ const SingleFloorPlan = () => {
     return inside;
   };
 
+  // Handle the start of desk dragging
   const handleDeskDragStart = (e) => {
     if (selectedDesk) {
       const stage = e.target.getStage();
@@ -508,6 +535,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Handle desk dragging movement
   const handleDeskDragMove = (e) => {
     if (isDraggingDesk && selectedDesk) {
       const stage = e.target.getStage();
@@ -530,6 +558,7 @@ const SingleFloorPlan = () => {
     }
   };
 
+  // Handle the end of desk dragging
   const handleDeskDragEnd = () => {
     if (isDraggingDesk && selectedDesk && tempDeskPosition) {
       setDesks((prevDesks) =>
@@ -545,6 +574,7 @@ const SingleFloorPlan = () => {
     setIsDraggingDesk(false);
   };
 
+  // Handle editing of a room
   const handleEditRoom = () => {
     if (selectedRoom) {
       sessionStorage.setItem("SelectedRoom", JSON.stringify(selectedRoom));
@@ -553,8 +583,6 @@ const SingleFloorPlan = () => {
         (desk) => desk.Room_Id === selectedRoom.Internal_ID
       );
       sessionStorage.setItem("RoomDesks", JSON.stringify(roomDesks));
-
-      router.push("/RoomDesigner");
     } else if (selectedDesk) {
       const deskRoom = rooms.find(
         (room) => room.Internal_ID === selectedDesk.Room_Id
@@ -565,10 +593,10 @@ const SingleFloorPlan = () => {
           (desk) => desk.Room_Id === deskRoom.Internal_ID
         );
         sessionStorage.setItem("RoomDesks", JSON.stringify(roomDesks));
-        router.push("/RoomDesigner");
       }
     }
   };
+
   return (
     <div
       style={{
@@ -1191,7 +1219,11 @@ const SingleFloorPlan = () => {
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
-                style={{ marginBottom: "20px",marginTop: "5px", width: "100%" }}
+                style={{
+                  marginBottom: "20px",
+                  marginTop: "5px",
+                  width: "100%",
+                }}
                 disabled={isDrawingRoom || isAddingDesk}
               />
 
@@ -1267,7 +1299,6 @@ const SingleFloorPlan = () => {
                 display: "flex",
                 justifyContent: "space-between",
                 height: "50px",
-                
                 margin: "15px",
               }}
             >
