@@ -24,7 +24,7 @@ const DynamicLayer = dynamic(
 const gridSize = 20;
 const PLOT_CONFIG = { width: 54, height: 38 };
 
-const SingleFloorPlan = () => {
+const RoomDesigner = () => {
   // State variables for managing floor plan data and UI states
   const [floorPlan, setFloorPlan] = useState(null);
   const [plotHeight, setPlotHeight] = useState(PLOT_CONFIG.height * gridSize);
@@ -70,82 +70,75 @@ const SingleFloorPlan = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const FloorPlans = urlParams.get("FloorPlan");
-    const Rooms = urlParams.get("Rooms");
-    const Desks = urlParams.get("Desks");
+    if (
+      sessionStorage.getItem("FloorPlan") &&
+      sessionStorage.getItem("GridSize") &&
+      sessionStorage.getItem("GridHeight") &&
+      sessionStorage.getItem("GridWidth")
+    ) {
+      let gridSize = JSON.parse(sessionStorage.getItem("GridSize"));
+      let selectedRoom = JSON.parse(sessionStorage.getItem("SelectedRoom"));
 
-    if (!FloorPlans) {
-      setType("complete");
+      // Calculate room dimensions
+      let minX = Math.min(...selectedRoom.Vertices.map((v) => v.x));
+      let maxX = Math.max(...selectedRoom.Vertices.map((v) => v.x));
+      let minY = Math.min(...selectedRoom.Vertices.map((v) => v.y));
+      let maxY = Math.max(...selectedRoom.Vertices.map((v) => v.y));
 
-      if (
-        sessionStorage.getItem("FloorPlan") &&
-        sessionStorage.getItem("GridSize") &&
-        sessionStorage.getItem("GridHeight") &&
-        sessionStorage.getItem("GridWidth")
-      ) {
-        let gridSize = JSON.parse(sessionStorage.getItem("GridSize"));
-        let gridHeight = JSON.parse(sessionStorage.getItem("GridHeight"));
-        let gridWidth = JSON.parse(sessionStorage.getItem("GridWidth"));
-        let floorPlan = JSON.parse(sessionStorage.getItem("FloorPlan"));
-        let rooms = JSON.parse(sessionStorage.getItem("Rooms"));
-        let desks = JSON.parse(sessionStorage.getItem("Desks"));
+      let roomWidth = maxX - minX;
+      let roomHeight = maxY - minY;
 
-        setFloorPlan(floorPlan);
-        setGridSizeValue(gridSize);
-        setPlotHeight(gridHeight);
-        setPlotWidth(gridWidth);
-        setRooms(rooms);
-        setDesks(desks);
+      // Calculate new plot dimensions with padding
+      let plotWidth = roomWidth + 4 * gridSize;
+      let plotHeight = roomHeight + 4 * gridSize;
+
+      // Calculate offset to center the room
+      let offsetX = (plotWidth - roomWidth) / 2 - minX;
+      let offsetY = (plotHeight - roomHeight) / 2 - minY;
+
+      // Update room vertices to center it in the new plot
+      let centeredRoom = {
+        ...selectedRoom,
+        Vertices: selectedRoom.Vertices.map((v) => ({
+          x: v.x + offsetX,
+          y: v.y + offsetY,
+        })),
+      };
+
+      setPlotHeight(plotHeight);
+      setPlotWidth(plotWidth);
+      setSelectedRoom(centeredRoom);
+
+      // If you have a rooms state, update it as well
+      setRooms([centeredRoom]);
+      setRoomColors({
+        [centeredRoom.Internal_ID]: getRandomColor(),
+      });
+
+      // If you have desks, center them too
+      if (sessionStorage.getItem("desks")) {
+        let desks = JSON.parse(sessionStorage.getItem("desks"));
+
+        //filter desks that are in the room
+        let roomDesks = desks.filter(
+          (desk) => desk.Room_ID === centeredRoom.ID
+        );
+        console.log("centeredRoom", centeredRoom);
+        console.log(" desks", desks);
+
+
+        let centeredDesks = roomDesks.map((desk) => ({
+          ...desk,
+          Vertices: desk.Vertices.map((v) => ({
+            x: v.x + offsetX,
+            y: v.y + offsetY,
+          })),
+        }));
+        setDesks(centeredDesks);
       }
-    } else {
-      try {
-        const parsedFloorPlan = JSON.parse(FloorPlans);
-        const parsedRooms = JSON.parse(Rooms);
-        const parsedDesks = JSON.parse(Desks);
 
-        setFloorPlan({
-          ID: parsedFloorPlan.ID,
-          Vertices: parsedFloorPlan.Vertices,
-          startShapePosition: parsedFloorPlan.startShapePosition,
-          floorName: parsedFloorPlan.FloorPlan_Name,
-          floorNumber: parsedFloorPlan.Floor_Number,
-        });
-
-        setFloorName(parsedFloorPlan.FloorPlan_Name);
-        setFloorNumber(parsedFloorPlan.Floor_Number);
-        setGridSizeValue(parsedFloorPlan.Grid_Size);
-        setPlotHeight(parsedFloorPlan.Grid_Height);
-        setPlotWidth(parsedFloorPlan.Grid_Width);
-        setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
-        setRooms(parsedRooms);
-        setDesks(parsedDesks);
-
-        if (parsedRooms) {
-          parsedRooms.forEach((room, index) => {
-            room.Internal_ID = index;
-          });
-        }
-        if (parsedDesks.length > 0) {
-          parsedDesks.forEach((desk, index) => {
-            desk.Internal_ID = index;
-          });
-        }
-
-        const newRoomColors = {};
-        parsedRooms.forEach((room) => {
-          newRoomColors[parseInt(room.Internal_ID)] = getRandomColor();
-        });
-        setRoomColors(newRoomColors);
-
-        const newDeskColors = {};
-        parsedDesks.forEach((desk) => {
-          newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
-        });
-        setDeskColors(newDeskColors);
-      } catch (error) {
-        console.log("Data is not JSON or is invalid JSON", error);
-      }
+      // Update grid size
+      setGridSizeValue(gridSize);
     }
   }, []);
 
@@ -155,62 +148,7 @@ const SingleFloorPlan = () => {
 
   // Navigate back to the previous page
   const backButton = async () => {
-    resetFloorPlan();
     window.history.back();
-  };
-
-  // Complete the floor plan and send data to the server
-  const completeFloor = async () => {
-    if (desks && floorName) {
-      try {
-        const response = await fetch(
-          type === "complete" ? "/api/floorPlanAPI" : "/api/editAPI",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              FloorPlan: {
-                Internal_ID: 1,
-                ID: floorPlan.ID,
-                FloorPlan_Name: floorName,
-                Floor_Number: floorNumber,
-                Creater_Account_ID: Creater_Account_ID,
-                Start_Shape_Position: floorPlan.startShapePosition,
-                Vertices: floorPlan.Vertices,
-                Grid_Size: gridSizeValue,
-                Grid_Height: plotHeight,
-                Grid_Width: plotWidth,
-                FloorPlan_Image: {
-                  Id: "fakeID",
-                  FileName: "FakeFileName.png",
-                  Contents: "FAKE",
-                },
-                FloorPlan_Image_Position: imagePosition,
-              },
-              Rooms: rooms,
-              Desks: desks,
-            }),
-          }
-        );
-
-        const responseText = await response.text();
-
-        if (!response.ok) {
-          throw new Error(
-            `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
-          );
-        } else {
-          alert("Successful!!");
-        }
-      } catch (error) {
-        console.error("Error creating floor plan:", error);
-        alert(
-          "An error occurred while completing the floor plan. Please check the console for more details."
-        );
-      }
-    }
   };
 
   // Generate a random color
@@ -304,24 +242,6 @@ const SingleFloorPlan = () => {
     }
   };
 
-  // Toggle custom room drawing mode
-  const toggleCustomRoom = () => {
-    setIsCustomRoom(!isCustomRoom);
-    if (!isCustomRoom) {
-      setCustomVertices([]);
-    }
-  };
-
-  // Toggle room drawing mode
-  const toggleDrawRoom = () => {
-    setIsDrawingRoom(!isDrawingRoom);
-    setIsCustomRoom(false);
-    setCustomVertices([]);
-    if (!isDrawingRoom) {
-      setCurrentRoom([]);
-    }
-  };
-
   // Toggle desk adding mode
   const toggleAddDesk = () => {
     setIsAddingDesk(!isAddingDesk);
@@ -333,11 +253,7 @@ const SingleFloorPlan = () => {
           floorPlanId: floorPlan.ID,
           Vertices: Vertices,
           Internal_ID: parseInt(DeskIndex) + 1,
-          Room_ID: selectedRoom
-            ? selectedRoom.ID
-              ? selectedRoom.ID
-              : selectedRoom.Internal_ID
-            : null,
+          Room_ID: selectedRoom ? selectedRoom.Internal_ID : null,
         };
         setDesks((prevDesks) => [...prevDesks, newDesk]);
         setDeskIndex(DeskIndex + 1);
@@ -397,69 +313,6 @@ const SingleFloorPlan = () => {
     return Vertices;
   };
 
-  // Reset the floor plan to its initial state
-  const resetFloorPlan = () => {
-    setFloorPlan(null);
-    setCustomVertices([]);
-    setRooms([]);
-    setCurrentRoom([]);
-    setSelectedRoom(null);
-    setRoomColors({});
-    setType("complete");
-    setDesks([]);
-    setCurrentDesk([]);
-    setSelectedDesk(null);
-
-    setDeskColors({});
-    setDeskIndex(1);
-    setRoomIndex(1);
-    sessionStorage.removeItem("FloorPlanData");
-    sessionStorage.removeItem("GridSize");
-    sessionStorage.removeItem("GridHeight");
-    sessionStorage.removeItem("GridWidth");
-    sessionStorage.removeItem("ImageData");
-    sessionStorage.removeItem("ImagePosition");
-    sessionStorage.removeItem("IsComplete");
-    sessionStorage.removeItem("Rooms");
-    sessionStorage.removeItem("Desks");
-    // alert("Floor plan data cleared!");
-  };
-
-  // Handle image upload and set the image object
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const img = new window.Image();
-        img.src = reader.result;
-        img.onload = () => {
-          setImageObj(img);
-        };
-        setImage(reader.result);
-        sessionStorage.setItem("ImageData", reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Scale the image to fit within the plot dimensions
-  const scaleImage = (img) => {
-    const scale = Math.min(plotWidth / img.width, plotHeight / img.height);
-    return {
-      width: img.width * scale,
-      height: img.height * scale,
-    };
-  };
-
-  // Move the image by a specified delta
-  const moveImage = (dx, dy) => {
-    setImagePosition((prev) => ({
-      x: prev.x + dx * gridSizeValue,
-      y: prev.y + dy * gridSizeValue,
-    }));
-  };
-
   // Handle changes to the floor name
   const handleFloorName = (e) => {
     const newName = e.target.value;
@@ -473,47 +326,6 @@ const SingleFloorPlan = () => {
     const newSize = parseInt(e.target.value);
     if (!isNaN(newSize)) {
       setFloorNumber(newSize);
-    }
-  };
-
-  // Handle changes to the grid size
-  const handleGridSizeChange = (e) => {
-    const newSize = parseInt(e.target.value);
-    if (!isNaN(newSize)) {
-      setGridSizeValue(newSize);
-      setPlotHeight((prevHeight) => (prevHeight / gridSizeValue) * newSize);
-      setPlotWidth((prevWidth) => (prevWidth / gridSizeValue) * newSize);
-    }
-  };
-
-  // Handle changes to the plot height
-  const handleHeightChange = (e) => {
-    const newHeight = parseInt(e.target.value);
-    if (!isNaN(newHeight)) {
-      setPlotHeight(newHeight * gridSizeValue);
-    }
-  };
-
-  // Handle changes to the plot width
-  const handleWidthChange = (e) => {
-    const newWidth = parseInt(e.target.value);
-    if (!isNaN(newWidth)) {
-      setPlotWidth(newWidth * gridSizeValue);
-    }
-  };
-
-  // Delete the selected room
-  const deleteSelectedRoom = () => {
-    if (selectedRoom) {
-      setRooms((prevRooms) =>
-        prevRooms.filter(
-          (room) => room.Internal_ID !== selectedRoom.Internal_ID
-        )
-      );
-      setDesks((prevDesks) =>
-        prevDesks.filter((desk) => desk.Room_ID !== selectedRoom.Internal_ID)
-      );
-      setSelectedRoom(null);
     }
   };
 
@@ -598,19 +410,20 @@ const SingleFloorPlan = () => {
   };
 
   // Handle editing of a room
-
   const handleEditRoom = () => {
     if (selectedRoom) {
       sessionStorage.setItem("SelectedRoom", JSON.stringify(selectedRoom));
+
+      const roomDesks = desks.filter(
+        (desk) => desk.Room_ID === selectedRoom.Internal_ID
+      );
+      sessionStorage.setItem("RoomDesks", JSON.stringify(roomDesks));
       sessionStorage.setItem("FloorPlan", JSON.stringify(floorPlan));
       sessionStorage.setItem("GridSize", gridSizeValue);
       sessionStorage.setItem("GridHeight", plotHeight);
       sessionStorage.setItem("GridWidth", plotWidth);
 
-      sessionStorage.setItem("rooms", JSON.stringify(rooms));
-      sessionStorage.setItem("desks", JSON.stringify(desks));
-
-      router.push("/RoomDesigner");
+      router.push("/FloorPlan");
     } else if (selectedDesk) {
       const deskRoom = rooms.find(
         (room) => room.Internal_ID === selectedDesk.Room_ID
@@ -666,19 +479,22 @@ const SingleFloorPlan = () => {
         <div style={{ flex: 1, display: "flex" }}>
           <div
             style={{
-              flex: "3",
               position: "relative",
-              overflow: "hidden",
+              overflow: "auto",
               backgroundColor: "white",
+              padding: "20px",
+              boxSizing: "border-box",
               display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
+              justifyContent: "flex-start",
+              alignItems: "flex-start",
             }}
           >
             <div
               style={{
                 border: "3px solid #D6D6D6",
                 backgroundColor: "white",
+                padding: "20px",
+                display: "inline-block",
               }}
             >
               <DynamicStage
@@ -731,79 +547,33 @@ const SingleFloorPlan = () => {
                       />
                     )
                   )}
-                  {floorPlan && (
+
+                  {rooms.map((room) => (
                     <Shape
+                      key={`room-${room.Internal_ID}`}
                       sceneFunc={(context) => {
                         context.beginPath();
-                        floorPlan.Vertices.forEach((vertex, idx) => {
+                        room.Vertices.forEach((vertex, idx) => {
                           idx === 0
                             ? context.moveTo(vertex.x, vertex.y)
                             : context.lineTo(vertex.x, vertex.y);
                         });
                         context.closePath();
-                        context.fillStyle = `rgba(173, 216, 230, ${floorPlanOpacity})`;
+                        context.fillStyle =
+                          room === selectedRoom
+                            ? `${roomColors[room.Internal_ID]}CC`
+                            : `${roomColors[room.Internal_ID]}${Math.round(
+                                roomOpacity * 255
+                              )
+                                .toString(16)
+                                .padStart(2, "0")}`;
                         context.fill();
-                        context.strokeWidth = 4;
-                        context.strokeStyle = "blue";
-
+                        context.strokeStyle =
+                          room === selectedRoom ? "blue" : "black";
                         context.stroke();
                       }}
                     />
-                  )}
-                  {customVertices.map((vertex, index) => (
-                    <Circle
-                      key={index}
-                      x={vertex.x}
-                      y={vertex.y}
-                      radius={5}
-                      fill="blue"
-                    />
                   ))}
-                  {customVertices.map((vertex, index) => {
-                    if (index < customVertices.length - 1) {
-                      return (
-                        <Line
-                          key={`line-${index}`}
-                          points={[
-                            vertex.x,
-                            vertex.y,
-                            customVertices[index + 1].x,
-                            customVertices[index + 1].y,
-                          ]}
-                          stroke="blue"
-                          strokeWidth={2}
-                        />
-                      );
-                    }
-                    return null;
-                  })}
-                  {rooms &&
-                    rooms.map((room) => (
-                      <Shape
-                        key={`room-${room.Internal_ID}`}
-                        sceneFunc={(context) => {
-                          context.beginPath();
-                          room.Vertices.forEach((vertex, idx) => {
-                            idx === 0
-                              ? context.moveTo(vertex.x, vertex.y)
-                              : context.lineTo(vertex.x, vertex.y);
-                          });
-                          context.closePath();
-                          context.fillStyle =
-                            room === selectedRoom
-                              ? `${roomColors[room.Internal_ID]}CC`
-                              : `${roomColors[room.Internal_ID]}${Math.round(
-                                  roomOpacity * 255
-                                )
-                                  .toString(16)
-                                  .padStart(2, "0")}`;
-                          context.fill();
-                          context.strokeStyle =
-                            room === selectedRoom ? "blue" : "black";
-                          context.stroke();
-                        }}
-                      />
-                    ))}
                   {currentRoom.map((vertex, index) => (
                     <Circle
                       key={`current-room-point-${index}`}
@@ -831,33 +601,32 @@ const SingleFloorPlan = () => {
                     }
                     return null;
                   })}
-                  {desks &&
-                    desks.map((desk) => (
-                      <Shape
-                        key={`desk-${desk.Internal_ID}`}
-                        sceneFunc={(context) => {
-                          context.beginPath();
-                          desk.Vertices.forEach((vertex, idx) => {
-                            idx === 0
-                              ? context.moveTo(vertex.x, vertex.y)
-                              : context.lineTo(vertex.x, vertex.y);
-                          });
-                          context.closePath();
-                          context.fillStyle =
-                            desk.Internal_ID === selectedDesk?.Internal_ID
-                              ? `${deskColors[desk.Internal_ID]}CC`
-                              : `${deskColors[desk.Internal_ID]}${Math.round(
-                                  deskOpacity * 255
-                                )
-                                  .toString(16)
-                                  .padStart(2, "0")}`;
-                          context.fill();
-                          context.strokeStyle = "black";
-                          context.stroke();
-                        }}
-                        onClick={() => setSelectedDesk(desk)}
-                      />
-                    ))}
+                  {desks.map((desk) => (
+                    <Shape
+                      key={`desk-${desk.Internal_ID}`}
+                      sceneFunc={(context) => {
+                        context.beginPath();
+                        desk.Vertices.forEach((vertex, idx) => {
+                          idx === 0
+                            ? context.moveTo(vertex.x, vertex.y)
+                            : context.lineTo(vertex.x, vertex.y);
+                        });
+                        context.closePath();
+                        context.fillStyle =
+                          desk.Internal_ID === selectedDesk?.Internal_ID
+                            ? `${deskColors[desk.Internal_ID]}CC`
+                            : `${deskColors[desk.Internal_ID]}${Math.round(
+                                deskOpacity * 255
+                              )
+                                .toString(16)
+                                .padStart(2, "0")}`;
+                        context.fill();
+                        context.strokeStyle = "black";
+                        context.stroke();
+                      }}
+                      onClick={() => setSelectedDesk(desk)}
+                    />
+                  ))}
                   {currentDesk.map((square, index) => (
                     <Rect
                       key={`current-desk-square-${index}`}
@@ -885,6 +654,7 @@ const SingleFloorPlan = () => {
               </DynamicStage>
             </div>
           </div>
+
           <div
             style={{
               flex: "1",
@@ -908,7 +678,7 @@ const SingleFloorPlan = () => {
                     marginBottom: "10px",
                   }}
                 >
-                  Floor Plan Designer
+                  Room Designer
                 </label>
 
                 <div
@@ -926,7 +696,7 @@ const SingleFloorPlan = () => {
                       <span
                         style={{
                           color: "red",
-                          display: floorName ? "none" : "inline",
+                          display: floorName ? "none" : "none",
                         }}
                       >
                         *
@@ -940,7 +710,7 @@ const SingleFloorPlan = () => {
                         padding: "2px",
                         width: "150px",
                         color: "black",
-                        borderColor: floorName ? "initial" : "red",
+                        borderColor: floorName ? "initial" : "initial",
                         borderWidth: "1px",
                         borderStyle: "solid",
                       }}
@@ -964,86 +734,6 @@ const SingleFloorPlan = () => {
                     />
                   </div>
                 </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "10px",
-                    paddingBottom: "25px",
-                    paddingTop: "20px",
-                  }}
-                >
-                  <div style={{ marginRight: "15px" }}>
-                    <label style={{ color: "white", marginRight: "5px" }}>
-                      Grid Size:
-                    </label>
-                    <input
-                      type="number"
-                      value={gridSizeValue}
-                      onChange={handleGridSizeChange}
-                      style={{
-                        width: "50px",
-                        color: "black",
-                        borderRadius: "5px",
-                        padding: "2px",
-                      }}
-                      disabled={isDrawingRoom || isAddingDesk || floorPlan}
-                    />
-                  </div>
-                  <div style={{ marginRight: "15px" }}>
-                    <label style={{ color: "white", marginRight: "5px" }}>
-                      Height (ft):
-                    </label>
-                    <input
-                      type="number"
-                      value={plotHeight / gridSizeValue}
-                      onChange={handleHeightChange}
-                      style={{
-                        width: "50px",
-                        color: "black",
-                        borderRadius: "5px",
-                        padding: "2px",
-                      }}
-                      disabled={isDrawingRoom || isAddingDesk || floorPlan}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ color: "white", marginRight: "5px" }}>
-                      Width (ft):
-                    </label>
-                    <input
-                      type="number"
-                      value={plotWidth / gridSizeValue}
-                      onChange={handleWidthChange}
-                      style={{
-                        width: "50px",
-                        color: "black",
-                        borderRadius: "5px",
-                        padding: "2px",
-                      }}
-                      disabled={isDrawingRoom || isAddingDesk || floorPlan}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  onClick={toggleCustomRoom}
-                  style={{
-                    backgroundColor: "green",
-                    color: "white",
-                    padding: "10px",
-                    width: "100%",
-                    borderRadius: "6px",
-                  }}
-                  disabled={
-                    !floorName || floorPlan || isDrawingRoom || isAddingDesk
-                  }
-                >
-                  Draw Floorplan
-                </button>
               </div>
             </div>
 
@@ -1062,62 +752,6 @@ const SingleFloorPlan = () => {
                   }}
                 />
               )}
-
-              <div
-                style={{
-                  backgroundColor: "#384A8E",
-                  padding: "15px",
-                  zIndex: 0,
-                  paddingBottom: "10px",
-                }}
-              >
-                <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>
-                  Design Rooms
-                </h2>
-                <button
-                  onClick={toggleDrawRoom}
-                  style={{
-                    backgroundColor: isDrawingRoom ? "darkgreen" : "darkblue",
-                    color: "white",
-                    padding: "10px",
-                    marginRight: "10px",
-                    borderRadius: "6px",
-                    marginTop: "5px",
-                  }}
-                  disabled={!floorPlan || isAddingDesk}
-                >
-                  {isDrawingRoom ? "Stop Drawing Room" : "Draw Room"}
-                </button>
-                {selectedRoom && (
-                  <button
-                    onClick={deleteSelectedRoom}
-                    style={{
-                      backgroundColor: "purple",
-                      color: "white",
-                      padding: "10px",
-                      marginRight: "10px",
-                      borderRadius: "6px",
-                      marginTop: "5px",
-                    }}
-                  >
-                    Delete Room
-                  </button>
-                )}
-                {(selectedRoom || selectedDesk) && (
-                  <button
-                    onClick={handleEditRoom}
-                    style={{
-                      backgroundColor: "green",
-                      color: "white",
-                      padding: "10px",
-                      margin: "10px 0",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    Edit Room
-                  </button>
-                )}
-              </div>
             </div>
             <div style={{ width: "100%", position: "relative" }}>
               {/* Grey overlay when disabled */}
@@ -1155,7 +789,7 @@ const SingleFloorPlan = () => {
                     marginRight: "10px",
                     borderRadius: "6px",
                   }}
-                  disabled={!selectedRoom || isDrawingRoom || !rooms.length}
+                  disabled={!floorPlan || isDrawingRoom || !rooms.length}
                 >
                   {isAddingDesk ? "Stop Adding Desk" : "Add Desk"}
                 </button>
@@ -1186,17 +820,7 @@ const SingleFloorPlan = () => {
               }}
             >
               <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>Tools</h2>
-              <div style={{ margin: "10px 0" }}>
-                <label style={{ color: "white" }}>Image Opacity: </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={imageOpacity}
-                  onChange={(e) => setImageOpacity(parseFloat(e.target.value))}
-                />
-              </div>
+
               <div style={{ margin: "10px 0" }}>
                 <label style={{ color: "white" }}>Grid Opacity: </label>
                 <input
@@ -1208,21 +832,7 @@ const SingleFloorPlan = () => {
                   onChange={(e) => setGridOpacity(parseFloat(e.target.value))}
                 />
               </div>
-              <div style={{ margin: "10px 0" }}>
-                <label style={{ color: "white" }}>
-                  Floor Plan Fill Opacity:{" "}
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={floorPlanOpacity}
-                  onChange={(e) =>
-                    setFloorPlanOpacity(parseFloat(e.target.value))
-                  }
-                />
-              </div>
+
               <div style={{ margin: "10px 0" }}>
                 <label style={{ color: "white" }}>Room Opacity: </label>
                 <input
@@ -1245,83 +855,6 @@ const SingleFloorPlan = () => {
                   onChange={(e) => setDeskOpacity(parseFloat(e.target.value))}
                 />
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{
-                  marginBottom: "20px",
-                  marginTop: "5px",
-                  width: "100%",
-                }}
-                disabled={isDrawingRoom || isAddingDesk}
-              />
-
-              <button
-                onClick={resetFloorPlan}
-                style={{
-                  backgroundColor: "Orange",
-                  color: "white",
-                  padding: "10px",
-                  marginRight: "10px",
-                  borderRadius: "6px",
-                }}
-                disabled={isDrawingRoom || isAddingDesk}
-              >
-                Reset
-              </button>
-              <button
-                onClick={() => moveImage(0, -0.1)}
-                style={{
-                  margin: "5px",
-                  padding: "10px",
-                  background: "lightgrey",
-                  border: "none",
-                  borderRadius: "6px",
-                  lineHeight: "12px",
-                }}
-              >
-                ↑
-              </button>
-              <button
-                onClick={() => moveImage(0.1, 0)}
-                style={{
-                  margin: "5px",
-                  padding: "10px",
-                  background: "lightgrey",
-                  border: "none",
-                  borderRadius: "6px",
-                  lineHeight: "12px",
-                }}
-              >
-                →
-              </button>
-              <button
-                onClick={() => moveImage(-0.1, 0)}
-                style={{
-                  margin: "5px",
-                  padding: "10px",
-                  background: "lightgrey",
-                  border: "none",
-                  borderRadius: "6px",
-                  lineHeight: "12px",
-                }}
-              >
-                ←
-              </button>
-              <button
-                onClick={() => moveImage(0, 0.1)}
-                style={{
-                  margin: "5px",
-                  padding: "10px",
-                  background: "lightgrey",
-                  border: "none",
-                  borderRadius: "6px",
-                  lineHeight: "12px",
-                }}
-              >
-                ↓
-              </button>
             </div>
 
             <div
@@ -1332,19 +865,6 @@ const SingleFloorPlan = () => {
                 margin: "15px",
               }}
             >
-              <button
-                onClick={completeFloor}
-                style={{
-                  backgroundColor: "darkblue",
-                  color: "white",
-                  padding: "15px",
-                  flex: 1,
-                  marginRight: "5px",
-                  borderRadius: "6px",
-                }}
-              >
-                {type === "complete" ? "Complete" : "Save"}
-              </button>
               <button
                 onClick={backButton}
                 style={{
@@ -1366,4 +886,4 @@ const SingleFloorPlan = () => {
   );
 };
 
-export default SingleFloorPlan;
+export default RoomDesigner;
