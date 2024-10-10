@@ -39,6 +39,8 @@ const RoomDesigner = () => {
   const [currentRoom, setCurrentRoom] = useState([]);
   const [floorName, setFloorName] = useState("");
   const [floorNumber, setFloorNumber] = useState(1);
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
 
   const [imageObj, setImageObj] = useState(null);
   const [imageOpacity, setImageOpacity] = useState(1);
@@ -63,8 +65,8 @@ const RoomDesigner = () => {
     "01HGDVRVHW8YZ0KESEY6EPA71Q"
   );
 
-  let [RoomIndex, setRoomIndex] = useState(1);
-  let [DeskIndex, setDeskIndex] = useState(1);
+  let [RoomIndex, setRoomIndex] = useState(0);
+  let [DeskIndex, setDeskIndex] = useState(0);
 
   const stageRef = useRef(null);
   const router = useRouter();
@@ -89,12 +91,15 @@ const RoomDesigner = () => {
       let roomHeight = maxY - minY;
 
       // Calculate new plot dimensions with padding
-      let plotWidth = roomWidth + 4 * gridSize;
-      let plotHeight = roomHeight + 4 * gridSize;
+      let plotWidth = roomWidth + 0 * gridSize;
+      let plotHeight = roomHeight + 0 * gridSize;
 
       // Calculate offset to center the room
       let offsetX = (plotWidth - roomWidth) / 2 - minX;
       let offsetY = (plotHeight - roomHeight) / 2 - minY;
+
+      setOffsetX(offsetX);
+      setOffsetY(offsetY);
 
       // Update room vertices to center it in the new plot
       let centeredRoom = {
@@ -105,6 +110,7 @@ const RoomDesigner = () => {
         })),
       };
 
+      setFloorPlan(JSON.parse(sessionStorage.getItem("FloorPlan")));
       setPlotHeight(plotHeight);
       setPlotWidth(plotWidth);
       setSelectedRoom(centeredRoom);
@@ -118,29 +124,78 @@ const RoomDesigner = () => {
       // If you have desks, center them too
       if (sessionStorage.getItem("desks")) {
         let desks = JSON.parse(sessionStorage.getItem("desks"));
+        if (desks) {
+          //filter desks that are in the room
+          let roomDesks = desks.filter(
+            (desk) => desk.Room_ID === centeredRoom.ID
+          );
 
-        //filter desks that are in the room
-        let roomDesks = desks.filter(
-          (desk) => desk.Room_ID === centeredRoom.ID
-        );
-        console.log("centeredRoom", centeredRoom);
-        console.log(" desks", desks);
+          //using the offset update the desk vertices
+          let centeredDesks = roomDesks.map((desk) => ({
+            ...desk,
+            Vertices: desk.Vertices.map((v) => ({
+              x: v.x + offsetX,
+              y: v.y + offsetY,
+            })),
+          }));
 
-
-        let centeredDesks = roomDesks.map((desk) => ({
-          ...desk,
-          Vertices: desk.Vertices.map((v) => ({
-            x: v.x + offsetX,
-            y: v.y + offsetY,
-          })),
-        }));
-        setDesks(centeredDesks);
+          setDesks(centeredDesks);
+          const newDeskColors = {};
+          centeredDesks.forEach((desk) => {
+            newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
+          });
+          setDeskColors(newDeskColors);
+        }
       }
-
       // Update grid size
       setGridSizeValue(gridSize);
     }
   }, []);
+
+  const saveDesks = async () => {
+    //using the offset update the desk vertices
+    let alignedDesks = desks.map((desk) => ({
+      ...desk,
+      Vertices: desk.Vertices.map((v) => ({
+        x: v.x - offsetX,
+        y: v.y - offsetY,
+      })),
+    }));
+
+
+    // seperate new vs old desks and only update existing from the routes.
+
+
+
+    if (alignedDesks.length > 0) {
+      try {
+        const response = await fetch("/api/NewDeskAPI", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            Desks: alignedDesks,
+          }),
+        });
+
+        const responseText = await response.text();
+
+        if (!response.ok) {
+          throw new Error(
+            `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
+          );
+        } else {
+          alert("Successful!!");
+        }
+      } catch (error) {
+        console.error("Error creating floor plan:", error);
+        alert(
+          "An error occurred while completing the floor plan. Please check the console for more details."
+        );
+      }
+    }
+  };
 
   // Snap a value to the nearest grid point
   const snapToGrid = (value) =>
@@ -148,6 +203,7 @@ const RoomDesigner = () => {
 
   // Navigate back to the previous page
   const backButton = async () => {
+    sessionStorage.setItem("desks", JSON.stringify(desks));
     window.history.back();
   };
 
@@ -170,50 +226,7 @@ const RoomDesigner = () => {
       y: snapToGrid(mousePos.y),
     };
 
-    if (isDrawingRoom) {
-      setCurrentRoom((prevRoom) => {
-        if (
-          prevRoom.length > 0 &&
-          clickedPosition.x === prevRoom[0].x &&
-          clickedPosition.y === prevRoom[0].y
-        ) {
-          const newRoom = {
-            id: null,
-            floorPlanId: floorPlan.Internal_ID,
-            Vertices: prevRoom,
-            Internal_ID: RoomIndex,
-          };
-          setRooms((prevRooms) => [...prevRooms, newRoom]);
-          setRoomColors((prevColors) => ({
-            ...prevColors,
-            [RoomIndex]: getRandomColor(),
-          }));
-
-          setRoomIndex(RoomIndex + 1);
-          return [];
-        }
-        return [...prevRoom, clickedPosition];
-      });
-    } else if (isCustomRoom) {
-      setCustomVertices((prevVertices) => {
-        if (
-          prevVertices.length > 0 &&
-          clickedPosition.x === prevVertices[0].x &&
-          clickedPosition.y === prevVertices[0].y
-        ) {
-          const newFloorPlan = {
-            id: null,
-            Internal_ID: 1,
-            Vertices: prevVertices,
-            startShapePosition: { x: prevVertices[0].x, y: prevVertices[0].y },
-          };
-          setFloorPlan(newFloorPlan);
-          setCustomVertices([]);
-          setIsCustomRoom(false);
-        }
-        return [...prevVertices, clickedPosition];
-      });
-    } else if (isAddingDesk) {
+    if (isAddingDesk) {
       setCurrentDesk((prevDesk) => {
         const existingSquare = prevDesk.find(
           (square) =>
@@ -229,12 +242,6 @@ const RoomDesigner = () => {
         }
       });
     } else {
-      const clickedRoom = rooms.find((room) =>
-        isPointInPolygon(clickedPosition, room.Vertices)
-      );
-
-      setSelectedRoom(clickedRoom || null);
-
       const clickedDesk = desks.find((desk) =>
         isPointInPolygon(clickedPosition, desk.Vertices)
       );
@@ -250,10 +257,11 @@ const RoomDesigner = () => {
         const Vertices = squaresToVertices(currentDesk);
         const newDesk = {
           id: null,
-          floorPlanId: floorPlan.ID,
+          FloorPlan_ID: floorPlan.ID,
           Vertices: Vertices,
           Internal_ID: parseInt(DeskIndex) + 1,
-          Room_ID: selectedRoom ? selectedRoom.Internal_ID : null,
+          Creater_Account_ID: Creater_Account_ID,
+          Room_ID: selectedRoom.ID,
         };
         setDesks((prevDesks) => [...prevDesks, newDesk]);
         setDeskIndex(DeskIndex + 1);
@@ -318,14 +326,6 @@ const RoomDesigner = () => {
     const newName = e.target.value;
     if (newName) {
       setFloorName(newName);
-    }
-  };
-
-  // Handle changes to the floor number
-  const handleFloorNumber = (e) => {
-    const newSize = parseInt(e.target.value);
-    if (!isNaN(newSize)) {
-      setFloorNumber(newSize);
     }
   };
 
@@ -407,35 +407,6 @@ const RoomDesigner = () => {
       setTempDeskPosition(null);
     }
     setIsDraggingDesk(false);
-  };
-
-  // Handle editing of a room
-  const handleEditRoom = () => {
-    if (selectedRoom) {
-      sessionStorage.setItem("SelectedRoom", JSON.stringify(selectedRoom));
-
-      const roomDesks = desks.filter(
-        (desk) => desk.Room_ID === selectedRoom.Internal_ID
-      );
-      sessionStorage.setItem("RoomDesks", JSON.stringify(roomDesks));
-      sessionStorage.setItem("FloorPlan", JSON.stringify(floorPlan));
-      sessionStorage.setItem("GridSize", gridSizeValue);
-      sessionStorage.setItem("GridHeight", plotHeight);
-      sessionStorage.setItem("GridWidth", plotWidth);
-
-      router.push("/FloorPlan");
-    } else if (selectedDesk) {
-      const deskRoom = rooms.find(
-        (room) => room.Internal_ID === selectedDesk.Room_ID
-      );
-      if (deskRoom) {
-        sessionStorage.setItem("SelectedRoom", JSON.stringify(deskRoom));
-        const roomDesks = desks.filter(
-          (desk) => desk.Room_ID === deskRoom.Internal_ID
-        );
-        sessionStorage.setItem("RoomDesks", JSON.stringify(roomDesks));
-      }
-    }
   };
 
   return (
@@ -696,7 +667,7 @@ const RoomDesigner = () => {
                       <span
                         style={{
                           color: "red",
-                          display: floorName ? "none" : "none",
+                          display: floorName.name ? "none" : "none",
                         }}
                       >
                         *
@@ -715,22 +686,6 @@ const RoomDesigner = () => {
                         borderStyle: "solid",
                       }}
                       required
-                    />
-                  </div>
-                  <div>
-                    <label style={{ color: "white", marginRight: "5px" }}>
-                      Floor:
-                    </label>
-                    <input
-                      type="number"
-                      value={floorNumber}
-                      onChange={handleFloorNumber}
-                      style={{
-                        borderRadius: "5px",
-                        padding: "2px",
-                        width: "50px",
-                        color: "black",
-                      }}
                     />
                   </div>
                 </div>
@@ -754,22 +709,6 @@ const RoomDesigner = () => {
               )}
             </div>
             <div style={{ width: "100%", position: "relative" }}>
-              {/* Grey overlay when disabled */}
-              {(!floorPlan || isDrawingRoom || !rooms.length) && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "rgba(128, 128, 128, 0.5)",
-                    zIndex: 1,
-                    pointerEvents: "none", // Prevent interaction
-                  }}
-                />
-              )}
-
               <div
                 style={{
                   backgroundColor: "#384A8E",
@@ -789,7 +728,6 @@ const RoomDesigner = () => {
                     marginRight: "10px",
                     borderRadius: "6px",
                   }}
-                  disabled={!floorPlan || isDrawingRoom || !rooms.length}
                 >
                   {isAddingDesk ? "Stop Adding Desk" : "Add Desk"}
                 </button>
@@ -866,6 +804,19 @@ const RoomDesigner = () => {
               }}
             >
               <button
+                onClick={saveDesks}
+                style={{
+                  backgroundColor: "darkblue",
+                  color: "white",
+                  padding: "15px",
+                  flex: 1,
+                  marginLeft: "5px",
+                  borderRadius: "6px",
+                }}
+              >
+                Save
+              </button>{" "}
+              <button
                 onClick={backButton}
                 style={{
                   backgroundColor: "darkblue",
@@ -876,7 +827,7 @@ const RoomDesigner = () => {
                   borderRadius: "6px",
                 }}
               >
-                {type === "complete" ? "Cancel" : "Back"}
+                Back
               </button>
             </div>
           </div>

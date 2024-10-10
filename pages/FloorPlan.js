@@ -63,8 +63,8 @@ const SingleFloorPlan = () => {
     "01HGDVRVHW8YZ0KESEY6EPA71Q"
   );
 
-  let [RoomIndex, setRoomIndex] = useState(1);
-  let [DeskIndex, setDeskIndex] = useState(1);
+  let [RoomIndex, setRoomIndex] = useState(0);
+  let [DeskIndex, setDeskIndex] = useState(0);
 
   const stageRef = useRef(null);
   const router = useRouter();
@@ -118,19 +118,13 @@ const SingleFloorPlan = () => {
         setPlotHeight(parsedFloorPlan.Grid_Height);
         setPlotWidth(parsedFloorPlan.Grid_Width);
         setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
-        setRooms(parsedRooms);
-        setDesks(parsedDesks);
 
         if (parsedRooms) {
           parsedRooms.forEach((room, index) => {
             room.Internal_ID = index;
           });
         }
-        if (parsedDesks.length > 0) {
-          parsedDesks.forEach((desk, index) => {
-            desk.Internal_ID = index;
-          });
-        }
+        setRooms(parsedRooms);
 
         const newRoomColors = {};
         parsedRooms.forEach((room) => {
@@ -138,11 +132,19 @@ const SingleFloorPlan = () => {
         });
         setRoomColors(newRoomColors);
 
-        const newDeskColors = {};
-        parsedDesks.forEach((desk) => {
-          newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
-        });
-        setDeskColors(newDeskColors);
+        if (parsedDesks) {
+          parsedDesks.forEach((desk, index) => {
+            desk.Internal_ID = index;
+          });
+          setDesks(parsedDesks);
+          console.log("desks", desks);
+
+          const newDeskColors = {};
+          parsedDesks.forEach((desk) => {
+            newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
+          });
+          setDeskColors(newDeskColors);
+        }
       } catch (error) {
         console.log("Data is not JSON or is invalid JSON", error);
       }
@@ -190,7 +192,6 @@ const SingleFloorPlan = () => {
                 FloorPlan_Image_Position: imagePosition,
               },
               Rooms: rooms,
-              Desks: desks,
             }),
           }
         );
@@ -241,7 +242,7 @@ const SingleFloorPlan = () => {
         ) {
           const newRoom = {
             id: null,
-            floorPlanId: floorPlan.Internal_ID,
+            FloorPlan_ID: floorPlan.Internal_ID,
             Vertices: prevRoom,
             Internal_ID: RoomIndex,
           };
@@ -296,11 +297,12 @@ const SingleFloorPlan = () => {
       );
 
       setSelectedRoom(clickedRoom || null);
-
-      const clickedDesk = desks.find((desk) =>
-        isPointInPolygon(clickedPosition, desk.Vertices)
-      );
-      setSelectedDesk(clickedDesk || null);
+      if (desks) {
+        const clickedDesk = desks.find((desk) =>
+          isPointInPolygon(clickedPosition, desk.Vertices)
+        );
+        setSelectedDesk(clickedDesk || null);
+      }
     }
   };
 
@@ -322,81 +324,6 @@ const SingleFloorPlan = () => {
     }
   };
 
-  // Toggle desk adding mode
-  const toggleAddDesk = () => {
-    setIsAddingDesk(!isAddingDesk);
-    if (isAddingDesk) {
-      if (currentDesk.length > 0) {
-        const Vertices = squaresToVertices(currentDesk);
-        const newDesk = {
-          id: null,
-          floorPlanId: floorPlan.ID,
-          Vertices: Vertices,
-          Internal_ID: parseInt(DeskIndex) + 1,
-          Room_ID: selectedRoom
-            ? selectedRoom.ID
-              ? selectedRoom.ID
-              : selectedRoom.Internal_ID
-            : null,
-        };
-        setDesks((prevDesks) => [...prevDesks, newDesk]);
-        setDeskIndex(DeskIndex + 1);
-        setDeskColors((prevColors) => ({
-          ...prevColors,
-          [newDesk.Internal_ID]: getRandomColor(),
-        }));
-        setCurrentDesk([]);
-      }
-    }
-  };
-
-  // Convert squares to vertices for desk creation
-  const squaresToVertices = (squares) => {
-    const minX = Math.min(...squares.map((s) => s.x));
-    const minY = Math.min(...squares.map((s) => s.y));
-    const maxX = Math.max(...squares.map((s) => s.x)) + gridSizeValue;
-    const maxY = Math.max(...squares.map((s) => s.y)) + gridSizeValue;
-
-    const edges = new Set();
-    squares.forEach((square) => {
-      edges.add(`${square.x},${square.y}`);
-      edges.add(`${square.x + gridSizeValue},${square.y}`);
-      edges.add(`${square.x},${square.y + gridSizeValue}`);
-      edges.add(`${square.x + gridSizeValue},${square.y + gridSizeValue}`);
-    });
-
-    const Vertices = [];
-    let x = minX,
-      y = minY;
-    let direction = 0; // 0: right, 1: down, 2: left, 3: up
-
-    do {
-      if (edges.has(`${x},${y}`)) {
-        Vertices.push({ x, y });
-        direction = (direction + 3) % 4;
-      } else {
-        direction = (direction + 1) % 4;
-      }
-
-      switch (direction) {
-        case 0:
-          x += gridSizeValue;
-          break;
-        case 1:
-          y += gridSizeValue;
-          break;
-        case 2:
-          x -= gridSizeValue;
-          break;
-        case 3:
-          y -= gridSizeValue;
-          break;
-      }
-    } while (x !== minX || y !== minY);
-
-    return Vertices;
-  };
-
   // Reset the floor plan to its initial state
   const resetFloorPlan = () => {
     setFloorPlan(null);
@@ -411,8 +338,8 @@ const SingleFloorPlan = () => {
     setSelectedDesk(null);
 
     setDeskColors({});
-    setDeskIndex(1);
-    setRoomIndex(1);
+    setDeskIndex(0);
+    setRoomIndex(0);
     sessionStorage.removeItem("FloorPlanData");
     sessionStorage.removeItem("GridSize");
     sessionStorage.removeItem("GridHeight");
@@ -1135,46 +1062,6 @@ const SingleFloorPlan = () => {
                   }}
                 />
               )}
-
-              <div
-                style={{
-                  backgroundColor: "#384A8E",
-                  padding: "15px",
-                  zIndex: 0,
-                }}
-              >
-                <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>
-                  Design Desks
-                </h2>
-                <button
-                  onClick={toggleAddDesk}
-                  style={{
-                    backgroundColor: isAddingDesk ? "blue" : "darkblue",
-                    color: "white",
-                    padding: "11px",
-                    marginRight: "10px",
-                    borderRadius: "6px",
-                  }}
-                  disabled={!selectedRoom || isDrawingRoom || !rooms.length}
-                >
-                  {isAddingDesk ? "Stop Adding Desk" : "Add Desk"}
-                </button>
-                {selectedDesk && (
-                  <button
-                    onClick={deleteSelectedDesk}
-                    disabled={!floorPlan || isDrawingRoom || !rooms.length}
-                    style={{
-                      backgroundColor: "purple",
-                      color: "white",
-                      padding: "10px",
-                      marginRight: "10px",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    Delete Desk
-                  </button>
-                )}
-              </div>
             </div>
             <div
               style={{
