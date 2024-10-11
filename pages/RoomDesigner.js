@@ -76,7 +76,8 @@ const RoomDesigner = () => {
       sessionStorage.getItem("FloorPlan") &&
       sessionStorage.getItem("GridSize") &&
       sessionStorage.getItem("GridHeight") &&
-      sessionStorage.getItem("GridWidth")
+      sessionStorage.getItem("GridWidth") &&
+      sessionStorage.getItem("SelectedRoom")
     ) {
       let gridSize = JSON.parse(sessionStorage.getItem("GridSize"));
       let selectedRoom = JSON.parse(sessionStorage.getItem("SelectedRoom"));
@@ -91,8 +92,8 @@ const RoomDesigner = () => {
       let roomHeight = maxY - minY;
 
       // Calculate new plot dimensions with padding
-      let plotWidth = roomWidth + 0 * gridSize;
-      let plotHeight = roomHeight + 0 * gridSize;
+      let plotWidth = roomWidth + 2 * gridSize;
+      let plotHeight = roomHeight + 2 * gridSize;
 
       // Calculate offset to center the room
       let offsetX = (plotWidth - roomWidth) / 2 - minX;
@@ -411,15 +412,15 @@ const RoomDesigner = () => {
       const mousePos = stage.getPointerPosition();
       const newX = snapToGrid(mousePos.x - deskOffset.x);
       const newY = snapToGrid(mousePos.y - deskOffset.y);
-
+  
       const dx = newX - selectedDesk.Vertices[0].x;
       const dy = newY - selectedDesk.Vertices[0].y;
-
+  
       const newVertices = selectedDesk.Vertices.map((v) => ({
         x: v.x + dx,
         y: v.y + dy,
       }));
-
+  
       setTempDeskPosition({
         Internal_ID: selectedDesk.Internal_ID,
         Vertices: newVertices,
@@ -454,7 +455,7 @@ const RoomDesigner = () => {
       <div style={{ width: "270px", backgroundColor: "#25316F" }}>
         {/* Sidebar content */}
       </div>
-
+  
       <div
         style={{
           flex: 2,
@@ -477,10 +478,48 @@ const RoomDesigner = () => {
           <span
             style={{ color: "white", fontSize: "20px", fontWeight: "bold" }}
           >
-            Real Estate Management
+            Room Designer -
           </span>
+          <div style={{ color: "white", textAlign: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                padding: "5px",
+                justifyContent: "center",
+              }}
+            >
+              <div style={{ marginRight: "15px" }}>
+                <label style={{ color: "white", marginRight: "5px" }}>
+                  <span
+                    style={{
+                      color: "red",
+                      display: floorName.name ? "none" : "none",
+                    }}
+                  >
+                    *
+                  </span>
+                </label>
+                <input
+                  value={floorName}
+                  onChange={handleFloorName}
+                  style={{
+                    borderRadius: "5px",
+                    padding: "2px",
+                    width: "150px",
+                    color: "black",
+                    borderColor: floorName ? "initial" : "initial",
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                  }}
+                  required
+                />
+              </div>
+            </div>
+          </div>
         </div>
-
+  
         <div style={{ flex: 1, display: "flex" }}>
           <div
             style={{
@@ -520,39 +559,39 @@ const RoomDesigner = () => {
                       opacity={imageOpacity}
                     />
                   )}
-                  {Array.from({ length: plotWidth / gridSizeValue }).map(
-                    (_, i) => (
-                      <Line
-                        key={`vertical-${i}`}
-                        points={[
-                          i * gridSizeValue,
-                          0,
-                          i * gridSizeValue,
-                          plotHeight,
-                        ]}
-                        stroke="gray"
-                        strokeWidth={0.5}
-                        opacity={gridOpacity}
-                      />
-                    )
-                  )}
-                  {Array.from({ length: plotHeight / gridSizeValue }).map(
-                    (_, i) => (
-                      <Line
-                        key={`horizontal-${i}`}
-                        points={[
-                          0,
-                          i * gridSizeValue,
-                          plotWidth,
-                          i * gridSizeValue,
-                        ]}
-                        stroke="gray"
-                        strokeWidth={0.5}
-                        opacity={gridOpacity}
-                      />
-                    )
-                  )}
-
+                  {Array.from({
+                    length: plotWidth / gridSizeValue + gridSize,
+                  }).map((_, i) => (
+                    <Line
+                      key={`vertical-${i}`}
+                      points={[
+                        i * gridSizeValue,
+                        0,
+                        i * gridSizeValue,
+                        plotHeight,
+                      ]}
+                      stroke="gray"
+                      strokeWidth={0.5}
+                      opacity={gridOpacity}
+                    />
+                  ))}
+                  {Array.from({
+                    length: plotHeight / gridSizeValue + gridSize,
+                  }).map((_, i) => (
+                    <Line
+                      key={`horizontal-${i}`}
+                      points={[
+                        0,
+                        i * gridSizeValue,
+                        plotWidth,
+                        i * gridSizeValue,
+                      ]}
+                      stroke="gray"
+                      strokeWidth={0.5}
+                      opacity={gridOpacity}
+                    />
+                  ))}
+  
                   {rooms.map((room) => (
                     <Shape
                       key={`room-${room.Internal_ID}`}
@@ -655,11 +694,28 @@ const RoomDesigner = () => {
                       onDragEnd={handleDeskDragEnd}
                     />
                   )}
+                  {tempDeskPosition && (
+                    <Shape
+                      sceneFunc={(context) => {
+                        context.beginPath();
+                        tempDeskPosition.Vertices.forEach((vertex, idx) => {
+                          idx === 0
+                            ? context.moveTo(vertex.x, vertex.y)
+                            : context.lineTo(vertex.x, vertex.y);
+                        });
+                        context.closePath();
+                        context.fillStyle = "rgba(0, 0, 255, 0.5)"; // Blue with transparency
+                        context.fill();
+                        context.strokeStyle = "blue";
+                        context.stroke();
+                      }}
+                    />
+                  )}
                 </DynamicLayer>
               </DynamicStage>
             </div>
           </div>
-
+  
           <div
             style={{
               flex: "1",
@@ -672,60 +728,6 @@ const RoomDesigner = () => {
               overflowY: "auto",
             }}
           >
-            <div style={{ width: "100%", padding: "15px", paddingTop: "12px" }}>
-              <div style={{ color: "white", textAlign: "center" }}>
-                <label
-                  style={{
-                    color: "white",
-                    fontSize: "20px",
-                    fontWeight: "bold",
-                    display: "block",
-                    marginBottom: "10px",
-                  }}
-                >
-                  Room Designer
-                </label>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: "5px",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div style={{ marginRight: "15px" }}>
-                    <label style={{ color: "white", marginRight: "5px" }}>
-                      Name:{" "}
-                      <span
-                        style={{
-                          color: "red",
-                          display: floorName.name ? "none" : "none",
-                        }}
-                      >
-                        *
-                      </span>
-                    </label>
-                    <input
-                      value={floorName}
-                      onChange={handleFloorName}
-                      style={{
-                        borderRadius: "5px",
-                        padding: "2px",
-                        width: "150px",
-                        color: "black",
-                        borderColor: floorName ? "initial" : "initial",
-                        borderWidth: "1px",
-                        borderStyle: "solid",
-                      }}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div style={{ width: "100%", position: "relative" }}>
               {!floorPlan && (
                 <div
@@ -792,7 +794,7 @@ const RoomDesigner = () => {
               }}
             >
               <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>Tools</h2>
-
+  
               <div style={{ margin: "10px 0" }}>
                 <label style={{ color: "white" }}>Grid Opacity: </label>
                 <input
@@ -804,7 +806,7 @@ const RoomDesigner = () => {
                   onChange={(e) => setGridOpacity(parseFloat(e.target.value))}
                 />
               </div>
-
+  
               <div style={{ margin: "10px 0" }}>
                 <label style={{ color: "white" }}>Room Opacity: </label>
                 <input
@@ -828,7 +830,7 @@ const RoomDesigner = () => {
                 />
               </div>
             </div>
-
+  
             <div
               style={{
                 display: "flex",
