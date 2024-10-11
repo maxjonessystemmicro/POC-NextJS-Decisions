@@ -70,35 +70,29 @@ const SingleFloorPlan = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const FloorPlans = urlParams.get("FloorPlan");
-    const Rooms = urlParams.get("Rooms");
-    const Desks = urlParams.get("Desks");
-
-    if (!FloorPlans) {
+    //methods for starting
+    //1. session storage is empty, and the url is empty
+    // fresh start
+    if (
+      sessionStorage.getItem("FloorPlan") === null &&
+      window.location.search === ""
+    ) {
       setType("complete");
+    }
 
-      if (
-        sessionStorage.getItem("FloorPlan") &&
-        sessionStorage.getItem("GridSize") &&
-        sessionStorage.getItem("GridHeight") &&
-        sessionStorage.getItem("GridWidth")
-      ) {
-        let gridSize = JSON.parse(sessionStorage.getItem("GridSize"));
-        let gridHeight = JSON.parse(sessionStorage.getItem("GridHeight"));
-        let gridWidth = JSON.parse(sessionStorage.getItem("GridWidth"));
-        let floorPlan = JSON.parse(sessionStorage.getItem("FloorPlan"));
-        let rooms = JSON.parse(sessionStorage.getItem("Rooms"));
-        let desks = JSON.parse(sessionStorage.getItem("Desks"));
-
-        setFloorPlan(floorPlan);
-        setGridSizeValue(gridSize);
-        setPlotHeight(gridHeight);
-        setPlotWidth(gridWidth);
-        setRooms(rooms);
-        setDesks(desks);
+    //2. url has data, no session storage
+    // edit mode, clear url
+    if (
+      window.location.search !== null
+    ) {
+      if(sessionStorage.getItem("SelectedRoom") === null){
+          resetFloorPlan();
       }
-    } else {
+      const urlParams = new URLSearchParams(window.location.search);
+      const FloorPlans = urlParams.get("FloorPlan");
+      const Rooms = urlParams.get("Rooms");
+      const Desks = urlParams.get("Desks");
+
       try {
         const parsedFloorPlan = JSON.parse(FloorPlans);
         const parsedRooms = JSON.parse(Rooms);
@@ -123,32 +117,102 @@ const SingleFloorPlan = () => {
           parsedRooms.forEach((room, index) => {
             room.Internal_ID = index;
           });
-        }
-        setRooms(parsedRooms);
 
-        const newRoomColors = {};
-        parsedRooms.forEach((room) => {
-          newRoomColors[parseInt(room.Internal_ID)] = getRandomColor();
-        });
-        setRoomColors(newRoomColors);
+          setRooms(parsedRooms);
+
+          const newRoomColors = {};
+          parsedRooms.forEach((room) => {
+            newRoomColors[parseInt(room.Internal_ID)] = getRandomColor();
+          });
+          setRoomColors(newRoomColors);
+        }
 
         if (parsedDesks) {
           parsedDesks.forEach((desk, index) => {
             desk.Internal_ID = index;
           });
           setDesks(parsedDesks);
-          console.log("desks", desks);
-
+    
           const newDeskColors = {};
           parsedDesks.forEach((desk) => {
             newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
           });
           setDeskColors(newDeskColors);
         }
+
+        //save in session storage
+        sessionStorage.setItem("FloorPlan", JSON.stringify({
+          ID: parsedFloorPlan.ID,
+          Vertices: parsedFloorPlan.Vertices,
+          startShapePosition: parsedFloorPlan.startShapePosition,
+          floorName: parsedFloorPlan.FloorPlan_Name,
+          floorNumber: parsedFloorPlan.Floor_Number,
+        }));
+        sessionStorage.setItem("GridSize", gridSizeValue);
+        sessionStorage.setItem("GridHeight", plotHeight);
+        sessionStorage.setItem("GridWidth", plotWidth);
+        sessionStorage.setItem("rooms", JSON.stringify(parsedRooms));
+        sessionStorage.setItem("desks", JSON.stringify(parsedDesks));
+        
+        //set the url
+        router.replace({
+          pathname: router.pathname,
+          query: { ...router.query },
+        }, undefined, { shallow: true });
+
       } catch (error) {
         console.log("Data is not JSON or is invalid JSON", error);
       }
     }
+
+    //3. session storage has data, url is empty
+    if (
+      sessionStorage.getItem("FloorPlan") !== null &&
+      window.location.search === ""
+    ) {
+
+      let gridSize = JSON.parse(sessionStorage.getItem("GridSize"));
+      let gridHeight = JSON.parse(sessionStorage.getItem("GridHeight"));
+      let gridWidth = JSON.parse(sessionStorage.getItem("GridWidth"));
+      let floorPlan = JSON.parse(sessionStorage.getItem("FloorPlan"));
+      let rooms = JSON.parse(sessionStorage.getItem("rooms"));
+      let desks = JSON.parse(sessionStorage.getItem("desks"));
+
+      setFloorPlan(floorPlan);
+      setGridSizeValue(gridSize);
+      setPlotHeight(gridHeight);
+      setPlotWidth(gridWidth);
+
+      if (rooms) {
+        rooms.forEach((room, index) => {
+          room.Internal_ID = index;
+        });
+
+        setRooms(rooms);
+
+        const newRoomColors = {};
+        rooms.forEach((room) => {
+          newRoomColors[parseInt(room.Internal_ID)] = getRandomColor();
+        });
+        setRoomColors(newRoomColors);
+      }
+
+      if (desks) {
+        desks.forEach((desk, index) => {
+          desk.Internal_ID = index;
+        });
+        setDesks(desks);
+  
+        const newDeskColors = {};
+        desks.forEach((desk) => {
+          newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
+        });
+        setDeskColors(newDeskColors);
+      }
+
+    }
+
+ 
   }, []);
 
   // Snap a value to the nearest grid point
@@ -166,7 +230,7 @@ const SingleFloorPlan = () => {
     if (desks && floorName) {
       try {
         const response = await fetch(
-          type === "complete" ? "/api/floorPlanAPI" : "/api/editAPI",
+          type === "complete" ? "/api/newFloorPlan" : "/api/editAPI",
           {
             method: "POST",
             headers: {
@@ -203,7 +267,14 @@ const SingleFloorPlan = () => {
             `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
           );
         } else {
-          alert("Successful!!");
+          //convert response text to floorplan object
+          const responseFloorPlan = JSON.parse(responseText);
+          
+          setFloorPlan(responseFloorPlan.Done.FloorPlanData[0]);
+          setRooms(responseFloorPlan.Done.RoomsData);
+
+
+
         }
       } catch (error) {
         console.error("Error creating floor plan:", error);
@@ -340,15 +411,16 @@ const SingleFloorPlan = () => {
     setDeskColors({});
     setDeskIndex(0);
     setRoomIndex(0);
-    sessionStorage.removeItem("FloorPlanData");
+    sessionStorage.removeItem("FloorPlan");
     sessionStorage.removeItem("GridSize");
     sessionStorage.removeItem("GridHeight");
     sessionStorage.removeItem("GridWidth");
     sessionStorage.removeItem("ImageData");
+    sessionStorage.removeItem("SelectedRoom");
     sessionStorage.removeItem("ImagePosition");
     sessionStorage.removeItem("IsComplete");
-    sessionStorage.removeItem("Rooms");
-    sessionStorage.removeItem("Desks");
+    sessionStorage.removeItem("rooms");
+    sessionStorage.removeItem("desks");
     // alert("Floor plan data cleared!");
   };
 

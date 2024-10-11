@@ -162,12 +162,11 @@ const RoomDesigner = () => {
       })),
     }));
 
-
     // seperate new vs old desks and only update existing from the routes.
+    let newDesks = alignedDesks.filter((desk) => desk.id === null);
+    let existingDesks = alignedDesks.filter((desk) => desk.id !== null);
 
-
-
-    if (alignedDesks.length > 0) {
+    if (newDesks.length > 0) {
       try {
         const response = await fetch("/api/NewDeskAPI", {
           method: "POST",
@@ -175,7 +174,35 @@ const RoomDesigner = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            Desks: alignedDesks,
+            Desks: newDesks,
+          }),
+        });
+
+        const responseText = await response.text();
+
+        if (!response.ok) {
+          throw new Error(
+            `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
+          );
+        } else {
+          alert("Successful!!");
+        }
+      } catch (error) {
+        console.error("Error creating floor plan:", error);
+        alert(
+          "An error occurred while completing the floor plan. Please check the console for more details."
+        );
+      }
+    }
+    if (existingDesks.length > 0) {
+      try {
+        const response = await fetch("/api/editDesksAPI", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            Desks: existingDesks,
           }),
         });
 
@@ -203,7 +230,14 @@ const RoomDesigner = () => {
 
   // Navigate back to the previous page
   const backButton = async () => {
-    sessionStorage.setItem("desks", JSON.stringify(desks));
+    let alignedDesks = desks.map((desk) => ({
+      ...desk,
+      Vertices: desk.Vertices.map((v) => ({
+        x: v.x - offsetX,
+        y: v.y - offsetY,
+      })),
+    }));
+    sessionStorage.setItem("desks", JSON.stringify(alignedDesks));
     window.history.back();
   };
 
