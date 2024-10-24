@@ -105,7 +105,9 @@ const SingleFloorPlan = () => {
           floorName: parsedFloorPlan.FloorPlan_Name,
           floorNumber: parsedFloorPlan.Floor_Number,
         });
-
+        setType("manual");
+        //console.log("image",parsedFloorPlan.FloorPlan_Image);
+        //setImageObj(parsedFloorPlan.FloorPlan_Image);
         setFloorName(parsedFloorPlan.FloorPlan_Name);
         setFloorNumber(parsedFloorPlan.Floor_Number);
         setGridSizeValue(parsedFloorPlan.Grid_Size);
@@ -228,6 +230,7 @@ const SingleFloorPlan = () => {
   // Complete the floor plan and send data to the server
   const completeFloor = async () => {
     if (desks && floorName) {
+
       try {
         const response = await fetch(
           type === "complete" ? "/api/newFloorPlan" : "/api/editAPI",
@@ -249,9 +252,8 @@ const SingleFloorPlan = () => {
                 Grid_Height: plotHeight,
                 Grid_Width: plotWidth,
                 FloorPlan_Image: {
-                  Id: "fakeID",
-                  FileName: "FakeFileName.png",
-                  Contents: "FAKE",
+                  FileName: imageObj.FileName,
+                  Contents: imageObj.Contents,
                 },
                 FloorPlan_Image_Position: imagePosition,
               },
