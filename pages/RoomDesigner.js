@@ -61,6 +61,18 @@ const RoomDesigner = () => {
   const [deskOffset, setDeskOffset] = useState({ x: 0, y: 0 });
   const [tempDeskPosition, setTempDeskPosition] = useState(null);
 
+  const [DeskConfigurations, setDeskConfigurations] = useState(null);
+  const [SelectedDeskConfig, setSelectedDeskConfig] = useState(null);
+
+  const [AmenitiesAvailable, setAmenitiesAvailable] = useState(null);
+  const [SelectedAmenities, setSelectedAmenities] = useState(null);
+
+  const [deskName, setDeskName] = useState("");
+  const [deskType, setDeskType] = useState("");
+  const [deskCapacity, setDeskCapacity] = useState("");
+
+  const hasFetchedConfigurationsRef = useRef(false);
+
   const [Creater_Account_ID, setCreater_Account_ID] = useState(
     "01HGDVRVHW8YZ0KESEY6EPA71Q"
   );
@@ -146,12 +158,132 @@ const RoomDesigner = () => {
             newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
           });
           setDeskColors(newDeskColors);
+
+          if (!DeskConfigurations && !hasFetchedConfigurationsRef.current) {
+            fetchConfigurations(selectedRoom.ID);
+            hasFetchedConfigurationsRef.current = true; // Mark as fetched
+          }
         }
       }
       // Update grid size
       setGridSizeValue(gridSize);
     }
-  }, []);
+  }, [DeskConfigurations]);
+
+  const fetchConfigurations = async (roomID) => {
+    if (!DeskConfigurations) {
+      try {
+        const response = await fetch(`/api/fetchDeskConfigs?RoomID=${roomID}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const responseText = await response.text();
+
+        if (!response.ok) {
+          throw new Error(
+            `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
+          );
+        } else {
+          const deskConfigurations = JSON.parse(responseText);
+
+          setDeskConfigurations(deskConfigurations.Done.RoomConfigs);
+          setAmenitiesAvailable(deskConfigurations.Done.AmenitiesAvailable);
+        }
+      } catch (error) {
+        console.error("Error fetching configurations:", error);
+      }
+    }
+  };
+
+
+  const setDeskInfo = async (info) => {
+    setSelectedDesk(info);
+
+    if (DeskConfigurations && DeskConfigurations.length > 0) {
+      const foundConfig = DeskConfigurations.find(
+        (config) => config.DeskID === info.ID
+      );
+      if (foundConfig) {
+     
+        setSelectedDeskConfig(foundConfig);
+        setDeskName(foundConfig.Desk_SpaceName);
+        setDeskType(foundConfig.Type);
+        setDeskCapacity(foundConfig.Capacity);
+        if(foundConfig.Amenities){
+
+          const selectedAmenities = foundConfig.Amenities.map((amenityID) =>
+            AmenitiesAvailable.find((amenity) => amenity.ID === amenityID)
+          ).filter(Boolean); // Filter out any undefined values in case an amenity is not found
+          setSelectedAmenities(selectedAmenities);
+        }else{
+          setSelectedAmenities([]);
+        }
+    
+      } else {
+       
+        setDeskName("");
+        setDeskType("");
+        setDeskCapacity("");
+        setSelectedAmenities([]);
+      }
+    } else {
+      setDeskName("");
+      setDeskType("");
+      setDeskCapacity("");
+      setSelectedAmenities([]);
+    }
+  };
+
+  const saveDeskConfig = async () => {
+    try {
+
+      const selectedAmenitiesIDs = SelectedAmenities.map(amenity => amenity.ID);
+      console.log("selected",selectedAmenitiesIDs);
+
+      const response = await fetch(`/api/saveDeskConfig`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          DeskID: selectedDesk.ID,
+          Desk_SpaceName: deskName,
+          Type: deskType,
+          Capacity: deskCapacity,
+          FloorPlanID: floorPlan.ID,
+          RoomID: selectedRoom.ID,
+          Amenities: selectedAmenitiesIDs
+        }),
+      });
+
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        throw new Error(
+          `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
+        );
+      } else {
+        alert("Desk configuration saved successfully.");
+      }
+    } catch (error) {
+      console.error("Error saving desk configuration:", error);
+    }
+  };
+
+  const handleDeskNameChange = (e) => {
+    setDeskName(e.target.value);
+  };
+
+  const handleDeskTypeChange = (e) => {
+    setDeskType(e.target.value);
+  };
+
+  const handleDeskCapacityChange = (e) => {
+    setDeskCapacity(e.target.value);
+  };
 
   const saveDesks = async () => {
     //using the offset update the desk vertices
@@ -280,7 +412,11 @@ const RoomDesigner = () => {
       const clickedDesk = desks.find((desk) =>
         isPointInPolygon(clickedPosition, desk.Vertices)
       );
-      setSelectedDesk(clickedDesk || null);
+      if (clickedDesk) {
+        setDeskInfo(clickedDesk || null);
+      } else {
+        setSelectedDesk(clickedDesk || null);
+      }
     }
   };
 
@@ -373,6 +509,7 @@ const RoomDesigner = () => {
         )
       );
       setSelectedDesk(null);
+      setSelectedDeskConfig(null);
     }
   };
 
@@ -412,15 +549,15 @@ const RoomDesigner = () => {
       const mousePos = stage.getPointerPosition();
       const newX = snapToGrid(mousePos.x - deskOffset.x);
       const newY = snapToGrid(mousePos.y - deskOffset.y);
-  
+
       const dx = newX - selectedDesk.Vertices[0].x;
       const dy = newY - selectedDesk.Vertices[0].y;
-  
+
       const newVertices = selectedDesk.Vertices.map((v) => ({
         x: v.x + dx,
         y: v.y + dy,
       }));
-  
+
       setTempDeskPosition({
         Internal_ID: selectedDesk.Internal_ID,
         Vertices: newVertices,
@@ -438,7 +575,7 @@ const RoomDesigner = () => {
             : desk
         )
       );
-      setSelectedDesk({ ...selectedDesk, Vertices: tempDeskPosition.Vertices });
+      setDeskInfo({ ...selectedDesk, Vertices: tempDeskPosition.Vertices });
       setTempDeskPosition(null);
     }
     setIsDraggingDesk(false);
@@ -455,7 +592,7 @@ const RoomDesigner = () => {
       <div style={{ width: "270px", backgroundColor: "#25316F" }}>
         {/* Sidebar content */}
       </div>
-  
+
       <div
         style={{
           flex: 2,
@@ -519,7 +656,7 @@ const RoomDesigner = () => {
             </div>
           </div>
         </div>
-  
+
         <div style={{ flex: 1, display: "flex" }}>
           <div
             style={{
@@ -591,7 +728,7 @@ const RoomDesigner = () => {
                       opacity={gridOpacity}
                     />
                   ))}
-  
+
                   {rooms.map((room) => (
                     <Shape
                       key={`room-${room.Internal_ID}`}
@@ -668,7 +805,7 @@ const RoomDesigner = () => {
                         context.strokeStyle = "black";
                         context.stroke();
                       }}
-                      onClick={() => setSelectedDesk(desk)}
+                      onClick={() => setDeskInfo(desk)}
                     />
                   ))}
                   {currentDesk.map((square, index) => (
@@ -715,7 +852,7 @@ const RoomDesigner = () => {
               </DynamicStage>
             </div>
           </div>
-  
+
           <div
             style={{
               flex: "1",
@@ -744,7 +881,9 @@ const RoomDesigner = () => {
                 />
               )}
             </div>
-            <div style={{ width: "100%", position: "relative" }}>
+            <div
+              style={{ width: "100%", position: "relative", paddingTop: "5px" }}
+            >
               <div
                 style={{
                   backgroundColor: "#384A8E",
@@ -784,6 +923,113 @@ const RoomDesigner = () => {
                 )}
               </div>
             </div>
+
+            <div
+              style={{
+                width: "100%",
+                position: "relative",
+
+                paddingTop: "5px",
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: "#384A8E",
+                  padding: "15px",
+                  height: "100%",
+                  zIndex: 0,
+                }}
+              >
+                <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>
+                  Configure Desk
+                </h2>
+
+                <div style={{ margin: "10px 0" }}>
+                  <label style={{ color: "white" }}>Name: </label>
+                  <input
+                    style={{ color: "black" }}
+                    type="text"
+                    value={deskName}
+                    onChange={handleDeskNameChange}
+                  />
+                </div>
+                <div style={{ margin: "10px 0" }}>
+                  <label style={{ color: "white" }}>Type: </label>
+                  <input
+                    style={{ color: "black" }}
+                    type="text"
+                    value={deskType}
+                    onChange={handleDeskTypeChange}
+                  />
+                </div>
+                <div style={{ margin: "10px 0" }}>
+                  <label style={{ color: "white" }}>Capacity: </label>
+                  <input
+                    type="number"
+                    style={{ color: "black" }}
+                    value={deskCapacity}
+                    onChange={handleDeskCapacityChange}
+                  />
+                </div>
+                <div style={{ margin: "10px 0" }}>
+                  {AmenitiesAvailable !== null && (
+                    <div>
+                      {AmenitiesAvailable.map((amenity) => (
+                        <div
+                          key={amenity.Name}
+                          style={{ display: "flex", alignItems: "center" }}
+                        >
+                          <input
+                            type="checkbox"
+                            id={amenity.Name}
+                            name={amenity.Name}
+                            value={amenity.Name}
+                            onChange={(e) => {
+                              const isChecked = e.target.checked;
+                              if (isChecked) {
+                                setSelectedAmenities([
+                                  ...(SelectedAmenities || []),
+                                  amenity,
+                                ]);
+                              } else {
+                                setSelectedAmenities(
+                                  (SelectedAmenities || []).filter(
+                                    (selected) => selected.Name !== amenity.Name
+                                  )
+                                );
+                              }
+                            }}
+                            checked={(SelectedAmenities || []).includes(
+                              amenity
+                            )}
+                          />
+                          <label
+                            htmlFor={amenity.Name}
+                            style={{ marginLeft: "8px", color: "white" }}
+                          >
+                            {amenity.Name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={saveDeskConfig}
+                  disabled={!selectedDesk}
+                  style={{
+                    backgroundColor: "purple",
+                    color: "white",
+                    padding: "10px",
+                    marginRight: "10px",
+                    borderRadius: "6px",
+                  }}
+                >
+                  Save Config
+                </button>
+              </div>
+            </div>
+
             <div
               style={{
                 width: "100%",
@@ -794,7 +1040,7 @@ const RoomDesigner = () => {
               }}
             >
               <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>Tools</h2>
-  
+
               <div style={{ margin: "10px 0" }}>
                 <label style={{ color: "white" }}>Grid Opacity: </label>
                 <input
@@ -806,7 +1052,7 @@ const RoomDesigner = () => {
                   onChange={(e) => setGridOpacity(parseFloat(e.target.value))}
                 />
               </div>
-  
+
               <div style={{ margin: "10px 0" }}>
                 <label style={{ color: "white" }}>Room Opacity: </label>
                 <input
@@ -830,7 +1076,6 @@ const RoomDesigner = () => {
                 />
               </div>
             </div>
-  
             <div
               style={{
                 display: "flex",
