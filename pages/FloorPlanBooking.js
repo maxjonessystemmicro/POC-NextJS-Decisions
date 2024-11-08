@@ -75,8 +75,11 @@ const FloorPlanBooking = () => {
   useEffect(() => {
     //2. url has data, no session storage
     // edit mode, clear url
-    if (window.location.search !== null && (window.location.pathname.includes("FloorPlan") && window.location.search.split('&').length > 1)) {
-    
+    if (
+      window.location.search !== null &&
+      window.location.pathname.includes("FloorPlan") &&
+      window.location.search.split("&").length > 1
+    ) {
       const urlParams = new URLSearchParams(window.location.search);
       const FloorPlans = urlParams.get("FloorPlan");
       const Rooms = urlParams.get("Rooms");
@@ -86,7 +89,7 @@ const FloorPlanBooking = () => {
         const parsedFloorPlan = JSON.parse(FloorPlans);
         const parsedRooms = JSON.parse(Rooms);
         const parsedDesks = JSON.parse(Desks);
-     
+
         setFloorPlan({
           ID: parsedFloorPlan.ID,
           Vertices: parsedFloorPlan.Vertices,
@@ -94,7 +97,7 @@ const FloorPlanBooking = () => {
           floorName: parsedFloorPlan.FloorPlan_Name,
           floorNumber: parsedFloorPlan.Floor_Number,
         });
-     
+
         setType("manual");
         //console.log("image",parsedFloorPlan.FloorPlan_Image);
         //setImageObj(parsedFloorPlan.FloorPlan_Image);
@@ -130,9 +133,8 @@ const FloorPlanBooking = () => {
             newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
           });
           setDeskColors(newDeskColors);
- 
         }
-       
+
         //save in session storage
         sessionStorage.setItem(
           "FloorPlan",
@@ -165,9 +167,7 @@ const FloorPlanBooking = () => {
     }
 
     //3. session storage has data, url is empty
-    if (
-      sessionStorage.getItem("FloorPlan") !== null 
-    ) {
+    if (sessionStorage.getItem("FloorPlan") !== null) {
       let gridSize = JSON.parse(sessionStorage.getItem("GridSize"));
       let gridHeight = JSON.parse(sessionStorage.getItem("GridHeight"));
       let gridWidth = JSON.parse(sessionStorage.getItem("GridWidth"));
@@ -205,13 +205,11 @@ const FloorPlanBooking = () => {
           newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
         });
         setDeskColors(newDeskColors);
-     
       }
     }
-    if(!DeskConfigs){
+    if (!DeskConfigs) {
       fetchConfigurations();
     }
-    
   }, []);
 
   // Snap a value to the nearest grid point
@@ -225,51 +223,84 @@ const FloorPlanBooking = () => {
   };
 
   const fetchConfigurations = async (roomID) => {
-  
-    if(floorPlan && !DeskConfigs){
-
+    if (floorPlan && !DeskConfigs) {
       try {
-     
-        const response = await fetch(`/api/fetchAvailableConfigs?FloorPlanID=${floorPlan.ID}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
+        const response = await fetch(
+          `/api/fetchAvailableConfigs?FloorPlanID=${floorPlan.ID}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
           }
-        });
-  
+        );
+
         const responseText = await response.text();
-  
+
         if (!response.ok) {
           throw new Error(
             `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
           );
         } else {
-
           const deskConfigurations = JSON.parse(responseText);
-          let tempDeskConfigs = deskConfigurations.Done.Configs;
 
-          if (deskConfigurations.Done.ExistingBookings !== null) {
-            deskConfigurations.Done.ExistingBookings.forEach((booking) => {
-              tempDeskConfigs.forEach((config) => {
-                if (booking.DeskSpaceEntityID === config.ID) {
-                  config.ExistingBookings = booking;
-                }
-              });
-            });
-          }
-
-
-
+          let tempDeskConfigs = deskConfigurations.Done.Configs.map(
+            (config) => {
+              let existingBooking = null;
+              if(deskConfigurations.Done.ExistingBookings){
+                existingBooking =
+                deskConfigurations.Done.ExistingBookings.find(
+                  (booking) => booking.DeskSpaceEntityID === config.ID
+                );
+              }
+             
+              return existingBooking
+                ? { ...config, ExistingBookings: [existingBooking] }
+                : config;
+            }
+          );
 
           setDeskConfigs(tempDeskConfigs);
           setEntityBookings(deskConfigurations.Done.ExistingBookings);
-    
         }
       } catch (error) {
         console.error("Error fetching configurations:", error);
       }
     }
-    
+  };
+
+  const bookEntity = async (config) => {
+    console.log("hi");
+    try {
+      const response = await fetch("/api/newBookingEntity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          FloorPlanID: floorPlan?.ID,
+          StartTime: new Date().toISOString(),
+          EndTime: new Date(new Date().setHours(new Date().getHours() + 2)).toISOString(),
+          DeskSpaceEntityID: config.ID,
+          guest: true, // Added guest parameter as per API documentation
+          outputtype: "Json", // Added outputtype parameter as per API documentation
+        }),
+      });
+      console.log("hi2");
+      const responseText = await response.text();
+      if (!response.ok) {
+        throw new Error(
+          `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
+        );
+      } else {
+        //convert response text to floorplan object
+        const responseFloorPlan = JSON.parse(responseText);
+
+        console.log(resetFloorPlan);
+      }
+    } catch (error) {
+      console.error("Error booking entity:", error);
+    }
   };
 
   // Generate a random color
@@ -393,7 +424,6 @@ const FloorPlanBooking = () => {
     // alert("Floor plan data cleared!");
   };
 
-
   // Scale the image to fit within the plot dimensions
   const scaleImage = (img) => {
     const scale = Math.min(plotWidth / img.width, plotHeight / img.height);
@@ -404,23 +434,22 @@ const FloorPlanBooking = () => {
   };
 
   const calculateAvailability = (Config) => {
+    const capacity = Config.Capacity;
+    let bookings = Config.ExistingBookings;
+    if(bookings){
+      bookings = [Config.ExistingBookings];
+    }
+    console.log(Config);
+    const availability = `${bookings ? bookings.length : 0}/${capacity} Booked`;
+    return availability;
+  };
 
-  const capacity = Config.Capacity;
-  const bookings = Config.ExistingBookings;
-  
-  const availability = `${bookings ? bookings : 0}/${capacity} Booked`;
-  return availability;
-
-  }
-
-  const handleConfigClick  = (Config) => {
-
+  const handleConfigClick = (Config) => {
     const clickedDesk = desks.find((desk) => desk.ID === Config.DeskID);
-    console.log("clickedDesk",clickedDesk);
+
     setSelectedRoom(clickedDesk.RoomID);
     setSelectedDesk(clickedDesk);
-    
-  }
+  };
 
   // Check if a point is inside a polygon
   const isPointInPolygon = (point, Vertices) => {
@@ -826,25 +855,63 @@ const FloorPlanBooking = () => {
                     <div
                       key={index}
                       style={{
-                        color:'black',
+                        color: "black",
                         display: "flex",
-                        flexDirection:"column",
-                        textAlign:"left",
+                        flexDirection: "row",
                         justifyContent: "space-between",
-                        alignItems: "flex-start",
+                        alignItems: "center",
                         padding: "10px",
                         backgroundColor: index % 2 === 0 ? "#f2f2f2" : "white",
                         cursor: "pointer",
                       }}
                       onClick={() => handleConfigClick(config)}
                     >
-                      <div style={{ flex: 1 }}>{config.Desk_SpaceName}</div>
-                      <div style={{ flex: 1 }}>{calculateAvailability(config)}</div>
+                      <div
+                        style={{
+                          flex: 9,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <div>{config.Desk_SpaceName}</div>
+                        <div>{calculateAvailability(config)}</div>
+                        {config.ExistingBookings && (config.ExistingBookings).map((booking, index) => (
+                          <div key={index}>
+                            {new Date(booking.StartTime).toDateString() === new Date().toDateString() ? `Today, ${new Date(booking.StartTime).getHours() % 12 || 12} ${new Date(booking.StartTime).getHours() >= 12 ? 'pm ' : 'am '}-${new Date(booking.EndTime).getHours() % 12 || 12} ${new Date(booking.EndTime).getHours() >= 12 ? 'pm' : 'am'}` : 
+                             new Date(booking.StartTime).toDateString() === new Date().setDate(new Date().getDate() + 1)  ? `Tomorrow, ${new Date(booking.StartTime).getHours() % 12 || 12} ${new Date(booking.StartTime).getHours() >= 12 ? 'pm ' : 'am '}-${new Date(booking.EndTime).getHours() % 12 || 12} ${new Date(booking.EndTime).getHours() >= 12 ? 'pm' : 'am'}` : 
+                             new Date(booking.StartTime).toLocaleString()}
+                          </div>
+                        ))}
+                      </div>
+                      <div
+                        style={{
+                          flex: 1,
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          alignItems: "center",
+                        }}
+                      >
+                        <button
+                          style={{
+                            backgroundColor: "#007bff",
+                            color: "white",
+                            padding: "07px 15px",
+                            margin: "7px 0",
+                            border: "none",
+                            borderRadius: "5px",
+                            cursor: "pointer",
+                            alignSelf: "flex-end",
+                          }}
+                          onClick={() => bookEntity(config)}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
-
             </div>
 
             <div style={{ width: "100%", position: "relative" }}>
