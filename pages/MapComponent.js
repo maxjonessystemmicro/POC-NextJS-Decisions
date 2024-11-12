@@ -60,7 +60,7 @@ const FloorPlanBooking = () => {
   const [tempDeskPosition, setTempDeskPosition] = useState(null);
 
   const [DeskConfigs, setDeskConfigs] = useState(null);
-  const [EntityBookings, setEntityBookings] = useState(null);
+  const [Bookings, setBookings] = useState(null);
 
   const [Creater_Account_ID, setCreater_Account_ID] = useState(
     "01HGDVRVHW8YZ0KESEY6EPA71Q"
@@ -78,13 +78,30 @@ const FloorPlanBooking = () => {
     const FloorPlans = urlParams.get("FloorPlan");
     const Rooms = urlParams.get("Rooms");
     const Desks = urlParams.get("Desks");
+    const Bookings = urlParams.get("Bookings");
+
+
 
     if(FloorPlans){
       try {
         const parsedFloorPlan = JSON.parse(FloorPlans);
         const parsedRooms = JSON.parse(Rooms);
         const parsedDesks = JSON.parse(Desks);
-        console.log(parsedFloorPlan);
+        if(Bookings){
+          const parsedBookings = JSON.parse(Bookings);
+          if(parsedBookings){
+            setBookings(parsedBookings);
+
+          parsedDesks.forEach(desk => {
+            const booking = parsedBookings.find(booking => booking.DeskID === desk.ID);
+            if (booking) {
+              desk.color = '#FF0000';
+            }
+          });
+          }
+        }
+     
+
         setFloorPlan({
           ID: parsedFloorPlan.ID,
           Vertices: parsedFloorPlan.Vertices,
@@ -102,7 +119,7 @@ const FloorPlanBooking = () => {
         setPlotHeight(parsedFloorPlan.Grid_Height);
         setPlotWidth(parsedFloorPlan.Grid_Width);
         setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
-  
+
         if (parsedRooms) {
           parsedRooms.forEach((room, index) => {
             room.Internal_ID = index;
@@ -122,13 +139,15 @@ const FloorPlanBooking = () => {
             desk.Internal_ID = index;
           });
           setDesks(parsedDesks);
-  
+
           const newDeskColors = {};
           parsedDesks.forEach((desk) => {
-            newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
+            newDeskColors[parseInt(desk.Internal_ID)] = desk.color ? desk.color : '#ffffff'
           });
           setDeskColors(newDeskColors);
         }
+      
+        
   
         //save in session storage
         sessionStorage.setItem(
@@ -147,6 +166,7 @@ const FloorPlanBooking = () => {
         sessionStorage.setItem("rooms", JSON.stringify(parsedRooms));
         sessionStorage.setItem("desks", JSON.stringify(parsedDesks));
   
+    
         //set the url
         router.replace(
           {
@@ -173,6 +193,8 @@ const FloorPlanBooking = () => {
     resetFloorPlan();
     window.history.back();
   };
+
+  
 
   const fetchConfigurations = async (roomID) => {
     if (floorPlan && !DeskConfigs) {
@@ -205,7 +227,7 @@ const FloorPlanBooking = () => {
                   (booking) => booking.DeskSpaceEntityID === config.ID
                 );
               }
-             
+              console.log(existingBooking);
               return existingBooking
                 ? { ...config, ExistingBookings: [existingBooking] }
                 : config;
@@ -222,7 +244,7 @@ const FloorPlanBooking = () => {
   };
 
   const bookEntity = async (config) => {
-    console.log("hi");
+
     try {
       const response = await fetch("/api/newBookingEntity", {
         method: "POST",
@@ -238,7 +260,7 @@ const FloorPlanBooking = () => {
           outputtype: "Json", // Added outputtype parameter as per API documentation
         }),
       });
-      console.log("hi2");
+    
       const responseText = await response.text();
       if (!response.ok) {
         throw new Error(
@@ -248,21 +270,17 @@ const FloorPlanBooking = () => {
         //convert response text to floorplan object
         const responseFloorPlan = JSON.parse(responseText);
 
-        console.log(resetFloorPlan);
+
       }
     } catch (error) {
       console.error("Error booking entity:", error);
     }
   };
 
-  // Generate a random color
+  // Pick a random color from 5 predefined colors
   const getRandomColor = () => {
-    const letters = "0123456789ABCDEF";
-    let color = "#";
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
+    const predefinedColors = ["#D3D3D3", "#E5E5EA", "#F0F0F0", "#F5F5DC", "#FFFFFF"];
+    return predefinedColors[Math.floor(Math.random() * predefinedColors.length)];
   };
 
   // Handle clicks on the stage
@@ -391,7 +409,7 @@ const FloorPlanBooking = () => {
     if(bookings){
       bookings = [Config.ExistingBookings];
     }
-    console.log(Config);
+
     const availability = `${bookings ? bookings.length : 0}/${capacity} Booked`;
     return availability;
   };
@@ -474,14 +492,15 @@ const FloorPlanBooking = () => {
 
 
   return (
+    <div style={{ width: '100vw', height: '100vh', backgroundColor: '#ebebeb' }}>
     <div
     style={{
       position: "absolute",
-      top: 0,
-      left: 0,
+      top: "50%",
+      left: "50%",
       overflow: "hidden",
-
-
+      transform: "translate(-50%, -50%)",
+      backgroundColor:'blue',
     }}
   >
     <div
@@ -610,20 +629,12 @@ const FloorPlanBooking = () => {
                           .padStart(2, "0")}`;
                   context.fill();
                   context.strokeStyle =
-                    room === selectedRoom ? "blue" : "black";
+                  "black";
                   context.stroke();
                 }}
               />
             ))}
-          {currentRoom.map((vertex, index) => (
-            <Circle
-              key={`current-room-point-${index}`}
-              x={vertex.x}
-              y={vertex.y}
-              radius={5}
-              fill="green"
-            />
-          ))}
+          
           {currentRoom.map((vertex, index) => {
             if (index < currentRoom.length - 1) {
               return (
@@ -665,6 +676,15 @@ const FloorPlanBooking = () => {
                   context.fill();
                   context.strokeStyle = "black";
                   context.stroke();
+                  // Add green outer shadow glow if desk has no color field
+                  if (!desk.color) {
+                    context.shadowColor = "green";
+                    context.shadowBlur = 5;
+                    context.shadowOffsetX = 0;
+                    context.shadowOffsetY = 0;
+                    context.fillStyle = "white";
+                    context.fill();
+                  }
                 }}
                 onClick={() => setSelectedDesk(desk)}
               />
@@ -680,21 +700,11 @@ const FloorPlanBooking = () => {
               opacity={0.5}
             />
           ))}
-          {selectedDesk && (
-            <Circle
-              x={selectedDesk.Vertices[0].x}
-              y={selectedDesk.Vertices[0].y}
-              radius={5}
-              fill="green"
-              draggable
-              onDragStart={handleDeskDragStart}
-              onDragMove={handleDeskDragMove}
-              onDragEnd={handleDeskDragEnd}
-            />
-          )}
+         
         </DynamicLayer>
       </DynamicStage>
     </div>
+  </div>
   </div>
   );
 };

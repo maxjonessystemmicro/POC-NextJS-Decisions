@@ -251,10 +251,7 @@ const SingleFloorPlan = () => {
                 Grid_Size: gridSizeValue,
                 Grid_Height: plotHeight,
                 Grid_Width: plotWidth,
-                FloorPlan_Image: {
-                  FileName: imageObj.FileName,
-                  Contents: imageObj.Contents,
-                },
+              
                 FloorPlan_Image_Position: imagePosition,
               },
               Rooms: rooms,

@@ -284,6 +284,8 @@ const FloorPlanBooking = () => {
           DeskSpaceEntityID: config.ID,
           guest: true, // Added guest parameter as per API documentation
           outputtype: "Json", // Added outputtype parameter as per API documentation
+          DeskID: config.DeskID,
+          AccountID: Creater_Account_ID
         }),
       });
       console.log("hi2");
