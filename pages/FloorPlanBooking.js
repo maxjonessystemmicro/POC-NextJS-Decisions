@@ -243,6 +243,8 @@ const FloorPlanBooking = () => {
           );
         } else {
           const deskConfigurations = JSON.parse(responseText);
+          console.log("configs",deskConfigurations.Done.Configs);
+          console.log("bookings",deskConfigurations.Done.ExistingBookings);
 
           let tempDeskConfigs = deskConfigurations.Done.Configs.map(
             (config) => {

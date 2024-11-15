@@ -45,7 +45,7 @@ const FloorPlanBooking = () => {
   const [gridOpacity, setGridOpacity] = useState(0.5);
   const [floorPlanOpacity, setFloorPlanOpacity] = useState(0.3);
   const [roomOpacity, setRoomOpacity] = useState(0.5);
-  const [deskOpacity, setDeskOpacity] = useState(0.5);
+  const [deskOpacity, setDeskOpacity] = useState(0.75);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [roomColors, setRoomColors] = useState({});
   const [isAddingDesk, setIsAddingDesk] = useState(false);
@@ -73,115 +73,174 @@ const FloorPlanBooking = () => {
   const router = useRouter();
 
   useEffect(() => {
-
     const urlParams = new URLSearchParams(window.location.search);
     const FloorPlans = urlParams.get("FloorPlan");
     const Rooms = urlParams.get("Rooms");
     const Desks = urlParams.get("Desks");
     const Bookings = urlParams.get("Bookings");
+    const Configs = urlParams.get("Configs");
 
-
-
-    if(FloorPlans){
+    if (FloorPlans) {
       try {
         const parsedFloorPlan = JSON.parse(FloorPlans);
         const parsedRooms = JSON.parse(Rooms);
         const parsedDesks = JSON.parse(Desks);
-        if(Bookings){
-          const parsedBookings = JSON.parse(Bookings);
-          if(parsedBookings){
-            setBookings(parsedBookings);
 
-          parsedDesks.forEach(desk => {
-            const booking = parsedBookings.find(booking => booking.DeskID === desk.ID);
-            if (booking) {
-              desk.color = '#FF0000';
+        const fetchConfigurations = async (floorPlan) => {
+          if (floorPlan) {
+            try {
+              const response = await fetch(
+                `/api/fetchAvailableConfigs?FloorPlanID=${floorPlan.ID}`,
+                {
+                  method: "GET",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+
+              const responseText = await response.text();
+
+              if (!response.ok) {
+                throw new Error(
+                  `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
+                );
+              } else {
+                const deskConfigurations = JSON.parse(responseText);
+
+                let tempDeskConfigs = deskConfigurations.Done.Configs.map(
+                  (config) => {
+                    let existingBooking = null;
+                    if (deskConfigurations.Done.ExistingBookings) {
+                      existingBooking =
+                        deskConfigurations.Done.ExistingBookings.find(
+                          (booking) => booking.DeskSpaceEntityID === config.ID
+                        );
+                    }
+
+                    return existingBooking
+                      ? { ...config, ExistingBookings: [existingBooking] }
+                      : config;
+                  }
+                );
+
+                setDeskConfigs(tempDeskConfigs);
+                setBookings(deskConfigurations.Done.ExistingBookings);
+
+                if (deskConfigurations.Done.ExistingBookings) {
+                  console.log("here", deskConfigurations.Done.ExistingBookings);
+
+                  parsedDesks.forEach((desk) => {
+                    const booking =
+                      deskConfigurations.Done.ExistingBookings.find(
+                        (booking) => booking.DeskID === desk.ID
+                      );
+
+                    if (booking) {
+                      desk.color = "#FF0000";
+                      const config = tempDeskConfigs.find(
+                        (config) => config.DeskID === desk.ID
+                      );
+                      if (
+                        config &&
+                        config.ExistingBookings &&
+                        config.ExistingBookings.length < config.Capacity
+                      ) {
+                        desk.color = "#FFA500"; // Orange color
+                      }
+                    }
+                  });
+                }
+
+                setFloorPlan({
+                  ID: parsedFloorPlan.ID,
+                  Vertices: parsedFloorPlan.Vertices,
+                  startShapePosition: parsedFloorPlan.startShapePosition,
+                  floorName: parsedFloorPlan.FloorPlan_Name,
+                  floorNumber: parsedFloorPlan.Floor_Number,
+                });
+
+                setType("manual");
+                //console.log("image",parsedFloorPlan.FloorPlan_Image);
+                //setImageObj(parsedFloorPlan.FloorPlan_Image);
+                setFloorName(parsedFloorPlan.FloorPlan_Name);
+                setFloorNumber(parsedFloorPlan.Floor_Number);
+                setGridSizeValue(parsedFloorPlan.Grid_Size);
+                setPlotHeight(parsedFloorPlan.Grid_Height);
+                setPlotWidth(parsedFloorPlan.Grid_Width);
+                setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
+
+                if (parsedRooms) {
+                  parsedRooms.forEach((room, index) => {
+                    room.Internal_ID = index;
+                  });
+
+                  setRooms(parsedRooms);
+
+                  const newRoomColors = {};
+                  parsedRooms.forEach((room) => {
+                    newRoomColors[parseInt(room.Internal_ID)] =
+                      getRandomColor();
+                  });
+                  setRoomColors(newRoomColors);
+                }
+
+                if (parsedDesks) {
+                  parsedDesks.forEach((desk, index) => {
+                    desk.Internal_ID = index;
+                  });
+                  setDesks(parsedDesks);
+
+                  const newDeskColors = {};
+                  parsedDesks.forEach((desk) => {
+                    newDeskColors[parseInt(desk.Internal_ID)] = desk.color
+                      ? desk.color
+                      : "#ffffff";
+                  });
+                  setDeskColors(newDeskColors);
+                }
+
+                //save in session storage
+                sessionStorage.setItem(
+                  "FloorPlan",
+                  JSON.stringify({
+                    ID: parsedFloorPlan.ID,
+                    Vertices: parsedFloorPlan.Vertices,
+                    startShapePosition: parsedFloorPlan.startShapePosition,
+                    floorName: parsedFloorPlan.FloorPlan_Name,
+                    floorNumber: parsedFloorPlan.Floor_Number,
+                  })
+                );
+                sessionStorage.setItem("GridSize", parsedFloorPlan.Grid_Size);
+                sessionStorage.setItem(
+                  "GridHeight",
+                  parsedFloorPlan.Grid_Height
+                );
+                sessionStorage.setItem("GridWidth", parsedFloorPlan.Grid_Width);
+                sessionStorage.setItem("rooms", JSON.stringify(parsedRooms));
+                sessionStorage.setItem("desks", JSON.stringify(parsedDesks));
+
+                //set the url
+                router.replace(
+                  {
+                    pathname: router.pathname,
+                    query: { ...router.query },
+                  },
+                  undefined,
+                  { shallow: true }
+                );
+              }
+            } catch (error) {
+              console.error("Error fetching configurations:", error);
             }
-          });
           }
-        }
-     
+        };
 
-        setFloorPlan({
-          ID: parsedFloorPlan.ID,
-          Vertices: parsedFloorPlan.Vertices,
-          startShapePosition: parsedFloorPlan.startShapePosition,
-          floorName: parsedFloorPlan.FloorPlan_Name,
-          floorNumber: parsedFloorPlan.Floor_Number,
-        });
-  
-        setType("manual");
-        //console.log("image",parsedFloorPlan.FloorPlan_Image);
-        //setImageObj(parsedFloorPlan.FloorPlan_Image);
-        setFloorName(parsedFloorPlan.FloorPlan_Name);
-        setFloorNumber(parsedFloorPlan.Floor_Number);
-        setGridSizeValue(parsedFloorPlan.Grid_Size);
-        setPlotHeight(parsedFloorPlan.Grid_Height);
-        setPlotWidth(parsedFloorPlan.Grid_Width);
-        setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
-
-        if (parsedRooms) {
-          parsedRooms.forEach((room, index) => {
-            room.Internal_ID = index;
-          });
-  
-          setRooms(parsedRooms);
-  
-          const newRoomColors = {};
-          parsedRooms.forEach((room) => {
-            newRoomColors[parseInt(room.Internal_ID)] = getRandomColor();
-          });
-          setRoomColors(newRoomColors);
-        }
-  
-        if (parsedDesks) {
-          parsedDesks.forEach((desk, index) => {
-            desk.Internal_ID = index;
-          });
-          setDesks(parsedDesks);
-
-          const newDeskColors = {};
-          parsedDesks.forEach((desk) => {
-            newDeskColors[parseInt(desk.Internal_ID)] = desk.color ? desk.color : '#ffffff'
-          });
-          setDeskColors(newDeskColors);
-        }
-      
-        
-  
-        //save in session storage
-        sessionStorage.setItem(
-          "FloorPlan",
-          JSON.stringify({
-            ID: parsedFloorPlan.ID,
-            Vertices: parsedFloorPlan.Vertices,
-            startShapePosition: parsedFloorPlan.startShapePosition,
-            floorName: parsedFloorPlan.FloorPlan_Name,
-            floorNumber: parsedFloorPlan.Floor_Number,
-          })
-        );
-        sessionStorage.setItem("GridSize", parsedFloorPlan.Grid_Size);
-        sessionStorage.setItem("GridHeight", parsedFloorPlan.Grid_Height);
-        sessionStorage.setItem("GridWidth", parsedFloorPlan.Grid_Width);
-        sessionStorage.setItem("rooms", JSON.stringify(parsedRooms));
-        sessionStorage.setItem("desks", JSON.stringify(parsedDesks));
-  
-    
-        //set the url
-        router.replace(
-          {
-            pathname: router.pathname,
-            query: { ...router.query },
-          },
-          undefined,
-          { shallow: true }
-        );
+        fetchConfigurations(parsedFloorPlan);
       } catch (error) {
         console.log("Data is not JSON or is invalid JSON", error);
       }
     }
-   
-
   }, []);
 
   // Snap a value to the nearest grid point
@@ -194,57 +253,7 @@ const FloorPlanBooking = () => {
     window.history.back();
   };
 
-  
-
-  const fetchConfigurations = async (roomID) => {
-    if (floorPlan && !DeskConfigs) {
-      try {
-        const response = await fetch(
-          `/api/fetchAvailableConfigs?FloorPlanID=${floorPlan.ID}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const responseText = await response.text();
-
-        if (!response.ok) {
-          throw new Error(
-            `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
-          );
-        } else {
-          const deskConfigurations = JSON.parse(responseText);
-
-          let tempDeskConfigs = deskConfigurations.Done.Configs.map(
-            (config) => {
-              let existingBooking = null;
-              if(deskConfigurations.Done.ExistingBookings){
-                existingBooking =
-                deskConfigurations.Done.ExistingBookings.find(
-                  (booking) => booking.DeskSpaceEntityID === config.ID
-                );
-              }
-              console.log(existingBooking);
-              return existingBooking
-                ? { ...config, ExistingBookings: [existingBooking] }
-                : config;
-            }
-          );
-
-          setDeskConfigs(tempDeskConfigs);
-          setEntityBookings(deskConfigurations.Done.ExistingBookings);
-        }
-      } catch (error) {
-        console.error("Error fetching configurations:", error);
-      }
-    }
-  };
-
   const bookEntity = async (config) => {
-
     try {
       const response = await fetch("/api/newBookingEntity", {
         method: "POST",
@@ -254,13 +263,15 @@ const FloorPlanBooking = () => {
         body: JSON.stringify({
           FloorPlanID: floorPlan?.ID,
           StartTime: new Date().toISOString(),
-          EndTime: new Date(new Date().setHours(new Date().getHours() + 2)).toISOString(),
+          EndTime: new Date(
+            new Date().setHours(new Date().getHours() + 2)
+          ).toISOString(),
           DeskSpaceEntityID: config.ID,
           guest: true, // Added guest parameter as per API documentation
           outputtype: "Json", // Added outputtype parameter as per API documentation
         }),
       });
-    
+
       const responseText = await response.text();
       if (!response.ok) {
         throw new Error(
@@ -269,8 +280,6 @@ const FloorPlanBooking = () => {
       } else {
         //convert response text to floorplan object
         const responseFloorPlan = JSON.parse(responseText);
-
-
       }
     } catch (error) {
       console.error("Error booking entity:", error);
@@ -279,8 +288,16 @@ const FloorPlanBooking = () => {
 
   // Pick a random color from 5 predefined colors
   const getRandomColor = () => {
-    const predefinedColors = ["#D3D3D3", "#E5E5EA", "#F0F0F0", "#F5F5DC", "#FFFFFF"];
-    return predefinedColors[Math.floor(Math.random() * predefinedColors.length)];
+    const predefinedColors = [
+      "#D3D3D3",
+      "#E5E5EA",
+      "#F0F0F0",
+      "#F5F5DC",
+      "#FFFFFF",
+    ];
+    return predefinedColors[
+      Math.floor(Math.random() * predefinedColors.length)
+    ];
   };
 
   // Handle clicks on the stage
@@ -406,7 +423,7 @@ const FloorPlanBooking = () => {
   const calculateAvailability = (Config) => {
     const capacity = Config.Capacity;
     let bookings = Config.ExistingBookings;
-    if(bookings){
+    if (bookings) {
       bookings = [Config.ExistingBookings];
     }
 
@@ -435,19 +452,6 @@ const FloorPlanBooking = () => {
       if (intersect) inside = !inside;
     }
     return inside;
-  };
-
-  // Handle the start of desk dragging
-  const handleDeskDragStart = (e) => {
-    if (selectedDesk) {
-      const stage = e.target.getStage();
-      const mousePos = stage.getPointerPosition();
-      setIsDraggingDesk(true);
-      setDeskOffset({
-        x: mousePos.x - selectedDesk.Vertices[0].x,
-        y: mousePos.y - selectedDesk.Vertices[0].y,
-      });
-    }
   };
 
   // Handle desk dragging movement
@@ -489,223 +493,413 @@ const FloorPlanBooking = () => {
     setIsDraggingDesk(false);
   };
 
-
-
   return (
-    <div style={{ width: '100vw', height: '100vh', backgroundColor: '#ebebeb' }}>
-    <div
-    style={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      overflow: "hidden",
-      transform: "translate(-50%, -50%)",
-      backgroundColor:'blue',
-    }}
-  >
     <div
       style={{
-        border: "3px solid #D6D6D6",
-        backgroundColor: "white",
-        width: "auto",
-        height: "auto",
+        width: "100vw",
+        height: "100vh",
+        backgroundColor: "#d4d4d4",
+        padding: "50px",
       }}
     >
-      <DynamicStage
-        width={plotWidth}
-        height={plotHeight}
-        onMouseDown={handleStageClick}
-        onMouseMove={handleDeskDragMove}
-        onMouseUp={handleDeskDragEnd}
-        ref={stageRef}
-      >
-        <DynamicLayer>
-          {imageObj && (
-            <KonvaImage
-              image={imageObj}
-              x={imagePosition.x}
-              y={imagePosition.y}
-              {...scaleImage(imageObj)}
-              opacity={imageOpacity}
-            />
-          )}
-          {Array.from({ length: plotWidth / gridSizeValue }).map(
-            (_, i) => (
-              <Line
-                key={`vertical-${i}`}
-                points={[
-                  i * gridSizeValue,
-                  0,
-                  i * gridSizeValue,
-                  plotHeight,
-                ]}
-                stroke="gray"
-                strokeWidth={0.5}
-                opacity={gridOpacity}
-              />
-            )
-          )}
-          {Array.from({ length: plotHeight / gridSizeValue }).map(
-            (_, i) => (
-              <Line
-                key={`horizontal-${i}`}
-                points={[
-                  0,
-                  i * gridSizeValue,
-                  plotWidth,
-                  i * gridSizeValue,
-                ]}
-                stroke="gray"
-                strokeWidth={0.5}
-                opacity={gridOpacity}
-              />
-            )
-          )}
-          {floorPlan && (
-            <Shape
-              sceneFunc={(context) => {
-                context.beginPath();
-                floorPlan.Vertices.forEach((vertex, idx) => {
-                  idx === 0
-                    ? context.moveTo(vertex.x, vertex.y)
-                    : context.lineTo(vertex.x, vertex.y);
-                });
-                context.closePath();
-                context.fillStyle = `rgba(173, 216, 230, ${floorPlanOpacity})`;
-                context.fill();
-                context.strokeWidth = 4;
-                context.strokeStyle = "blue";
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          height: "100%",
 
-                context.stroke();
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: "auto",
+            marginRight: "15px",
+            gap: "15px",
+            padding: "25px",
+            backgroundColor: "white",
+            border: "3px solid black",
+            height: "100%",
+          }}
+        >
+          <div
+            style={{
+              border: "3px solid #a6a4a4",
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            <div style={{ padding: "15px" }}>
+              <h2 style={{ marginBottom: "10px", fontWeight: "bold" }}>
+                Filters & Tools
+              </h2>
+              <div
+                style={{
+                  width: "100%",
+
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  color: "black",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: "10px",
+                    }}
+                  >
+                    <div>
+                      <label>Grid Opacity: </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={gridOpacity}
+                        onChange={(e) =>
+                          setGridOpacity(parseFloat(e.target.value))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label>Floor Plan Fill Opacity: </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={floorPlanOpacity}
+                        onChange={(e) =>
+                          setFloorPlanOpacity(parseFloat(e.target.value))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: "10px",
+                    }}
+                  >
+                    <div>
+                      <label>Room Opacity: </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={roomOpacity}
+                        onChange={(e) =>
+                          setRoomOpacity(parseFloat(e.target.value))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label>Desk Opacity: </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={deskOpacity}
+                        onChange={(e) =>
+                          setDeskOpacity(parseFloat(e.target.value))
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                border: "3px solid #a6a4a4",
+
+                backgroundColor: "white",
               }}
-            />
-          )}
-          {customVertices.map((vertex, index) => (
-            <Circle
-              key={index}
-              x={vertex.x}
-              y={vertex.y}
-              radius={5}
-              fill="blue"
-            />
-          ))}
-          {customVertices.map((vertex, index) => {
-            if (index < customVertices.length - 1) {
-              return (
-                <Line
-                  key={`line-${index}`}
-                  points={[
-                    vertex.x,
-                    vertex.y,
-                    customVertices[index + 1].x,
-                    customVertices[index + 1].y,
-                  ]}
-                  stroke="blue"
-                  strokeWidth={2}
-                />
-              );
-            }
-            return null;
-          })}
-          {rooms &&
-            rooms.map((room) => (
-              <Shape
-                key={`room-${room.Internal_ID}`}
-                sceneFunc={(context) => {
-                  context.beginPath();
-                  room.Vertices.forEach((vertex, idx) => {
-                    idx === 0
-                      ? context.moveTo(vertex.x, vertex.y)
-                      : context.lineTo(vertex.x, vertex.y);
-                  });
-                  context.closePath();
-                  context.fillStyle =
-                    room === selectedRoom
-                      ? `${roomColors[room.Internal_ID]}CC`
-                      : `${roomColors[room.Internal_ID]}${Math.round(
-                          roomOpacity * 255
-                        )
-                          .toString(16)
-                          .padStart(2, "0")}`;
-                  context.fill();
-                  context.strokeStyle =
-                  "black";
-                  context.stroke();
-                }}
-              />
-            ))}
-          
-          {currentRoom.map((vertex, index) => {
-            if (index < currentRoom.length - 1) {
-              return (
-                <Line
-                  key={`current-room-line-${index}`}
-                  points={[
-                    vertex.x,
-                    vertex.y,
-                    currentRoom[index + 1].x,
-                    currentRoom[index + 1].y,
-                  ]}
-                  stroke="green"
-                  strokeWidth={2}
-                />
-              );
-            }
-            return null;
-          })}
-          {desks &&
-            desks.map((desk) => (
-              <Shape
-                key={`desk-${desk.Internal_ID}`}
-                sceneFunc={(context) => {
-                  context.beginPath();
-                  desk.Vertices.forEach((vertex, idx) => {
-                    idx === 0
-                      ? context.moveTo(vertex.x, vertex.y)
-                      : context.lineTo(vertex.x, vertex.y);
-                  });
-                  context.closePath();
-                  context.fillStyle =
-                    desk.Internal_ID === selectedDesk?.Internal_ID
-                      ? `${deskColors[desk.Internal_ID]}CC`
-                      : `${deskColors[desk.Internal_ID]}${Math.round(
-                          deskOpacity * 255
-                        )
-                          .toString(16)
-                          .padStart(2, "0")}`;
-                  context.fill();
-                  context.strokeStyle = "black";
-                  context.stroke();
-                  // Add green outer shadow glow if desk has no color field
-                  if (!desk.color) {
-                    context.shadowColor = "green";
-                    context.shadowBlur = 5;
-                    context.shadowOffsetX = 0;
-                    context.shadowOffsetY = 0;
-                    context.fillStyle = "white";
-                    context.fill();
-                  }
-                }}
-                onClick={() => setSelectedDesk(desk)}
-              />
-            ))}
-          {currentDesk.map((square, index) => (
-            <Rect
-              key={`current-desk-square-${index}`}
-              x={square.x}
-              y={square.y}
-              width={gridSizeValue}
-              height={gridSizeValue}
-              fill="black"
-              opacity={0.5}
-            />
-          ))}
-         
-        </DynamicLayer>
-      </DynamicStage>
+            >
+              <DynamicStage
+                width={plotWidth}
+                height={plotHeight}
+                onMouseDown={handleStageClick}
+                ref={stageRef}
+              >
+                <DynamicLayer>
+                  {imageObj && (
+                    <KonvaImage
+                      image={imageObj}
+                      x={imagePosition.x}
+                      y={imagePosition.y}
+                      {...scaleImage(imageObj)}
+                      opacity={imageOpacity}
+                    />
+                  )}
+                  {Array.from({ length: plotWidth / gridSizeValue }).map(
+                    (_, i) => (
+                      <Line
+                        key={`vertical-${i}`}
+                        points={[
+                          i * gridSizeValue,
+                          0,
+                          i * gridSizeValue,
+                          plotHeight,
+                        ]}
+                        stroke="gray"
+                        strokeWidth={0.5}
+                        opacity={gridOpacity}
+                      />
+                    )
+                  )}
+                  {Array.from({ length: plotHeight / gridSizeValue }).map(
+                    (_, i) => (
+                      <Line
+                        key={`horizontal-${i}`}
+                        points={[
+                          0,
+                          i * gridSizeValue,
+                          plotWidth,
+                          i * gridSizeValue,
+                        ]}
+                        stroke="gray"
+                        strokeWidth={0.5}
+                        opacity={gridOpacity}
+                      />
+                    )
+                  )}
+                  {floorPlan && (
+                    <Shape
+                      sceneFunc={(context) => {
+                        context.beginPath();
+                        floorPlan.Vertices.forEach((vertex, idx) => {
+                          idx === 0
+                            ? context.moveTo(vertex.x, vertex.y)
+                            : context.lineTo(vertex.x, vertex.y);
+                        });
+                        context.closePath();
+                        context.fillStyle = `rgba(173, 216, 230, ${floorPlanOpacity})`;
+                        context.fill();
+                        context.strokeWidth = 4;
+                        context.strokeStyle = "black";
+
+                        context.stroke();
+                      }}
+                    />
+                  )}
+                  {customVertices.map((vertex, index) => (
+                    <Circle
+                      key={index}
+                      x={vertex.x}
+                      y={vertex.y}
+                      radius={5}
+                      fill="black"
+                    />
+                  ))}
+                  {customVertices.map((vertex, index) => {
+                    if (index < customVertices.length - 1) {
+                      return (
+                        <Line
+                          key={`line-${index}`}
+                          points={[
+                            vertex.x,
+                            vertex.y,
+                            customVertices[index + 1].x,
+                            customVertices[index + 1].y,
+                          ]}
+                          stroke="black"
+                          strokeWidth={2}
+                        />
+                      );
+                    }
+                    return null;
+                  })}
+                  {rooms &&
+                    rooms.map((room) => (
+                      <Shape
+                        key={`room-${room.Internal_ID}`}
+                        sceneFunc={(context) => {
+                          context.beginPath();
+                          room.Vertices.forEach((vertex, idx) => {
+                            idx === 0
+                              ? context.moveTo(vertex.x, vertex.y)
+                              : context.lineTo(vertex.x, vertex.y);
+                          });
+                          context.closePath();
+                          context.fillStyle =
+                            room === selectedRoom
+                              ? `${roomColors[room.Internal_ID]}CC`
+                              : `${roomColors[room.Internal_ID]}${Math.round(
+                                  roomOpacity * 255
+                                )
+                                  .toString(16)
+                                  .padStart(2, "0")}`;
+                          context.fill();
+                          context.strokeStyle = "black";
+                          context.stroke();
+                        }}
+                      />
+                    ))}
+
+                  {desks &&
+                    desks.map((desk) => (
+                      <>
+                        <Shape
+                          key={`desk-${desk.Internal_ID}`}
+                          sceneFunc={(context) => {
+                            context.beginPath();
+                            desk.Vertices.forEach((vertex, idx) => {
+                              idx === 0
+                                ? context.moveTo(vertex.x, vertex.y)
+                                : context.lineTo(vertex.x, vertex.y);
+                            });
+                            context.closePath();
+                            // Add green outer shadow glow if desk has no color field
+                            if (!desk.color) {
+                              context.shadowColor = "green";
+                              context.shadowBlur = 2;
+                              context.shadowOffsetX = 0;
+                              context.shadowOffsetY = 0;
+                            }
+                            context.fillStyle =
+                              desk.Internal_ID === selectedDesk?.Internal_ID
+                                ? "#689cf7" // Blue hex
+                                : desk.color
+                                ? `${desk.color}${Math.round(deskOpacity * 255)
+                                    .toString(16)
+                                    .padStart(2, "0")}`
+                                : `${deskColors[desk.Internal_ID]}${Math.round(
+                                    deskOpacity * 255
+                                  )
+                                    .toString(16)
+                                    .padStart(2, "0")}`;
+                            context.globalAlpha = deskOpacity;
+                            context.fill();
+                            context.strokeStyle =
+                              desk.Internal_ID === selectedDesk?.Internal_ID
+                                ? "black"
+                                : "black";
+                            context.stroke();
+                          }}
+                          onClick={() => setSelectedDesk(desk)}
+                        />
+                        <Shape
+                          sceneFunc={(context) => {
+                            const centerX =
+                              desk.Vertices[0].x + gridSizeValue / 2;
+                            const centerY =
+                              desk.Vertices[0].y + gridSizeValue / 2;
+                            context.beginPath();
+                            context.arc(centerX, centerY, 7.5, 0, 2 * Math.PI);
+                            context.fillStyle = "white";
+                            context.globalAlpha = deskOpacity;
+                            context.fill();
+                            context.strokeStyle = "black";
+                            context.lineWidth = 1;
+                            context.stroke();
+                            context.font = "12px Arial";
+                            context.fillStyle = "black";
+                            context.globalAlpha = deskOpacity;
+                            context.textAlign = "center";
+                            context.textBaseline = "middle";
+
+                            if (DeskConfigs) {
+                              let capacityText = parseInt(
+                                DeskConfigs.find(
+                                  (config) => config.DeskID === desk.ID
+                                )?.Capacity
+                              );
+
+                              let bookings = Bookings?.filter(
+                                (booking) => booking.DeskID === desk.ID
+                              );
+                              if (bookings) {
+                                capacityText -= bookings.length;
+                              }
+
+                              context.fillText(
+                                capacityText ? capacityText : "0",
+                                centerX - 0.5,
+                                centerY + 1
+                              ); // Adjusted to correct the text position
+                            }
+                          }}
+                        />
+                      </>
+                    ))}
+                </DynamicLayer>
+              </DynamicStage>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            border: "3px solid black",
+            backgroundColor: "white",
+            width: "100%",
+            minWidth: "300px",
+            padding: "15px",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            flexGrow: 1,
+            maxWidth: "500px",
+          }}
+        >
+          <h2
+            style={{
+              color: "var(--text-color)",
+              textAlign: "center",
+              fontFamily: "var(--tile-header-text)",
+              marginBottom: "5px",
+              marginTop: "5px",
+            }}
+          >
+            Floor Plan Availability & Selected Desk
+          </h2>
+
+          <div
+            style={{
+              width: "100%",
+              height: "500px",
+              backgroundColor: "#cfcccc",
+              margin: "0 auto",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              borderRadius: "10px",
+            }}
+          >
+            {/* Your content goes here */}
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-  </div>
   );
 };
 
