@@ -1,0 +1,86 @@
+/* Add a root class to contain all styles */
+.deskBookingVisualizer {
+  margin: 20px;
+  overflow-x: auto;
+}
+
+.deskBookingVisualizer table {
+  border-collapse: collapse;
+  width: auto;
+  table-layout: fixed;
+}
+
+.deskBookingVisualizer td {
+  padding: 5px;
+  text-align: center;
+  border: 1px solid #ddd;
+  font-size: 12px;
+}
+
+.deskBookingVisualizer th {
+  font-weight: bold;
+  width:100%;
+}
+.visualizerContainer {
+  margin: 20px;
+}
+
+.visualizerTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.visualizerTable th, .visualizerTable td {
+  border: 1px solid #ddd;
+
+  padding: 8px;
+  text-align: center;
+}
+
+.visualizerTable th {
+  font-weight: bold;
+}
+
+.tooltip {
+  position: absolute;
+  background-color: #333;
+  color: #fff;
+  padding: 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  z-index: 100;
+}
+
+.statusCellavailable {
+  background-color: #4CAF50 !important; /* Green for available */
+}
+
+.statusCellbooked {
+  background-color: #FF5722 !important; /* Red for booked */
+}
+
+.statusCellpartial {
+  background-color: #FFC107 !important; /* Yellow for partial */
+}
+
+.statusCellselected {
+  background-color: #1f79f8 !important; /* Yellow for partial */
+}
+
+.deskBookingVisualizer td.status-cell {
+  width: 20px; /* Adjust as necessary to fit all intervals */
+  height: 20px;
+}
+
+.confirmButton {
+  background-color: green;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.confirmButton:hover {
+  background-color: darkgreen;
+}
