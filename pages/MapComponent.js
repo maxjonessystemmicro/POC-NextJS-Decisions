@@ -39,7 +39,7 @@ const FloorPlanBooking = () => {
   const [currentRoom, setCurrentRoom] = useState([]);
   const [floorName, setFloorName] = useState("");
   const [floorNumber, setFloorNumber] = useState(1);
-
+  const [AvailableAmenties, setAvailableAmenties] = useState(null);
   const [imageObj, setImageObj] = useState(null);
   const [imageOpacity, setImageOpacity] = useState(1);
   const [gridOpacity, setGridOpacity] = useState(0.5);
@@ -54,6 +54,7 @@ const FloorPlanBooking = () => {
   const [type, setType] = useState(null);
 
   const [selectedDesk, setSelectedDesk] = useState(null);
+  const [selectedDeskConfig, setSelectedDeskConfig] = useState(null);
   const [deskColors, setDeskColors] = useState({});
   const [isDraggingDesk, setIsDraggingDesk] = useState(false);
   const [deskOffset, setDeskOffset] = useState({ x: 0, y: 0 });
@@ -63,7 +64,7 @@ const FloorPlanBooking = () => {
   const [Bookings, setBookings] = useState(null);
 
   const [Creater_Account_ID, setCreater_Account_ID] = useState(
-    "01HGDVRVHW8YZ0KESEY6EPA71Q"
+    null
   );
 
   let [RoomIndex, setRoomIndex] = useState(0);
@@ -77,6 +78,7 @@ const FloorPlanBooking = () => {
     const FloorPlans = urlParams.get("FloorPlan");
     const Rooms = urlParams.get("Rooms");
     const Desks = urlParams.get("Desks");
+    const Creater_Account_ID = urlParams.get("CAI");
     const Bookings = urlParams.get("Bookings");
     const Configs = urlParams.get("Configs");
 
@@ -107,51 +109,55 @@ const FloorPlanBooking = () => {
                 );
               } else {
                 const deskConfigurations = JSON.parse(responseText);
-
-                let tempDeskConfigs = deskConfigurations.Done.Configs.map(
-                  (config) => {
-                    let existingBooking = null;
-                    if (deskConfigurations.Done.ExistingBookings) {
-                      existingBooking =
-                        deskConfigurations.Done.ExistingBookings.find(
-                          (booking) => booking.DeskSpaceEntityID === config.ID
-                        );
-                    }
-
-                    return existingBooking
-                      ? { ...config, ExistingBookings: [existingBooking] }
-                      : config;
-                  }
-                );
-
-                setDeskConfigs(tempDeskConfigs);
-                setBookings(deskConfigurations.Done.ExistingBookings);
-
-                if (deskConfigurations.Done.ExistingBookings) {
-                  console.log("here", deskConfigurations.Done.ExistingBookings);
-
-                  parsedDesks.forEach((desk) => {
-                    const booking =
-                      deskConfigurations.Done.ExistingBookings.find(
-                        (booking) => booking.DeskID === desk.ID
-                      );
-
-                    if (booking) {
-                      desk.color = "#FF0000";
-                      const config = tempDeskConfigs.find(
-                        (config) => config.DeskID === desk.ID
-                      );
-                      if (
-                        config &&
-                        config.ExistingBookings &&
-                        config.ExistingBookings.length < config.Capacity
-                      ) {
-                        desk.color = "#FFA500"; // Orange color
+                if(deskConfigurations.Done.Configs){
+                  let tempDeskConfigs = deskConfigurations.Done.Configs.map(
+                    (config) => {
+                      let existingBooking = null;
+                      if (deskConfigurations.Done.ExistingBookings) {
+                        existingBooking =
+                          deskConfigurations.Done.ExistingBookings.find(
+                            (booking) => booking.DeskSpaceEntityID === config.ID
+                          );
                       }
-                    }
-                  });
-                }
 
+                      return existingBooking
+                        ? { ...config, ExistingBookings: [existingBooking] }
+                        : config;
+                    }
+                  );
+                  setDeskConfigs(tempDeskConfigs);
+                  setBookings(deskConfigurations.Done.ExistingBookings);
+  
+                  if (deskConfigurations.Done.ExistingBookings) {
+        
+  
+                    parsedDesks.forEach((desk) => {
+                      const booking =
+                        deskConfigurations.Done.ExistingBookings.find(
+                          (booking) => booking.DeskID === desk.ID
+                        );
+  
+                      if (booking) {
+                        desk.color = "#FF0000";
+                        const config = tempDeskConfigs.find(
+                          (config) => config.DeskID === desk.ID
+                        );
+                        if (
+                          config &&
+                          config.ExistingBookings &&
+                          config.ExistingBookings.length < config.Capacity
+                        ) {
+                          desk.color = "#FFA500"; // Orange color
+                        }
+                      }
+                    });
+                  }
+                  if (deskConfigurations.Done.Amenties) {
+                  setAvailableAmenties(deskConfigurations.Done.Amenties);
+                  }
+  
+                }
+               
                 setFloorPlan({
                   ID: parsedFloorPlan.ID,
                   Vertices: parsedFloorPlan.Vertices,
@@ -169,6 +175,7 @@ const FloorPlanBooking = () => {
                 setPlotHeight(parsedFloorPlan.Grid_Height);
                 setPlotWidth(parsedFloorPlan.Grid_Width);
                 setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
+                setCreater_Account_ID(Creater_Account_ID);
 
                 if (parsedRooms) {
                   parsedRooms.forEach((room, index) => {
@@ -219,6 +226,7 @@ const FloorPlanBooking = () => {
                 sessionStorage.setItem("GridWidth", parsedFloorPlan.Grid_Width);
                 sessionStorage.setItem("rooms", JSON.stringify(parsedRooms));
                 sessionStorage.setItem("desks", JSON.stringify(parsedDesks));
+                sessionStorage.setItem("CAI", Creater_Account_ID);
 
                 //set the url
                 router.replace(
@@ -263,15 +271,15 @@ const FloorPlanBooking = () => {
         body: JSON.stringify({
           FloorPlanID: floorPlan?.ID,
           StartTime: new Date().toISOString(),
-          EndTime: new Date(
-            new Date().setHours(new Date().getHours() + 2)
-          ).toISOString(),
+          EndTime: new Date(new Date().setHours(new Date().getHours() + 2)).toISOString(),
           DeskSpaceEntityID: config.ID,
           guest: true, // Added guest parameter as per API documentation
           outputtype: "Json", // Added outputtype parameter as per API documentation
+          DeskID: config.DeskID,
+          AccountID: Creater_Account_ID
         }),
       });
-
+      console.log("hi2");
       const responseText = await response.text();
       if (!response.ok) {
         throw new Error(
@@ -280,6 +288,8 @@ const FloorPlanBooking = () => {
       } else {
         //convert response text to floorplan object
         const responseFloorPlan = JSON.parse(responseText);
+
+        console.log(resetFloorPlan);
       }
     } catch (error) {
       console.error("Error booking entity:", error);
@@ -378,6 +388,10 @@ const FloorPlanBooking = () => {
           isPointInPolygon(clickedPosition, desk.Vertices)
         );
         setSelectedDesk(clickedDesk || null);
+        if(DeskConfigs && clickedDesk){
+          setSelectedDeskConfig(DeskConfigs.find(config => config.DeskID === clickedDesk.ID) || null);
+        }
+      
       }
     }
   };
@@ -492,6 +506,7 @@ const FloorPlanBooking = () => {
     }
     setIsDraggingDesk(false);
   };
+
 
   return (
     <div
@@ -896,6 +911,36 @@ const FloorPlanBooking = () => {
             }}
           >
             {/* Your content goes here */}
+          {selectedDesk && DeskConfigs && selectedDeskConfig && (
+            <div style={{ padding: "10px", backgroundColor: "#f0f0f0", borderRadius: "5px" }}>
+               <p>
+                <strong>Desk Details</strong>
+              </p>
+              <p>
+                <strong>Name:</strong> {selectedDeskConfig.Desk_SpaceName}
+              </p>
+              <p>
+                <strong>Type:</strong> {selectedDeskConfig.Type}
+              </p>
+              <p>
+                <strong>Availability:</strong> {calculateAvailability(selectedDeskConfig)}
+              </p>
+              <p>
+                
+              <div>
+                <strong>Amenities:</strong>
+                <ul>
+                  {selectedDeskConfig.Amenities.map(amenityId => (
+                    <li key={amenityId}>
+                      • {AvailableAmenties.find(amenity => amenity.ID === amenityId).Name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+                
+              </p>
+            </div>
+          )}
           </div>
         </div>
       </div>

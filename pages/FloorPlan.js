@@ -60,7 +60,7 @@ const SingleFloorPlan = () => {
   const [tempDeskPosition, setTempDeskPosition] = useState(null);
 
   const [Creater_Account_ID, setCreater_Account_ID] = useState(
-    "01HGDVRVHW8YZ0KESEY6EPA71Q"
+    null
   );
 
   let [RoomIndex, setRoomIndex] = useState(0);
@@ -75,8 +75,12 @@ const SingleFloorPlan = () => {
     // fresh start
     if (
       sessionStorage.getItem("FloorPlan") === null &&
-      window.location.search === ""
+      window.location.search.includes("CAI")
     ) {
+      const urlParams = new URLSearchParams(window.location.search);
+     
+      const Creater_Account_ID = urlParams.get("CAI");
+      setCreater_Account_ID(Creater_Account_ID);
       setType("complete");
     }
 
@@ -92,7 +96,7 @@ const SingleFloorPlan = () => {
       const FloorPlans = urlParams.get("FloorPlan");
       const Rooms = urlParams.get("Rooms");
       const Desks = urlParams.get("Desks");
-
+      const Creater_Account_ID = urlParams.get("CAI");
       try {
         const parsedFloorPlan = JSON.parse(FloorPlans);
         const parsedRooms = JSON.parse(Rooms);
@@ -114,6 +118,7 @@ const SingleFloorPlan = () => {
         setPlotHeight(parsedFloorPlan.Grid_Height);
         setPlotWidth(parsedFloorPlan.Grid_Width);
         setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
+        setCreater_Account_ID(Creater_Account_ID);
 
         if (parsedRooms) {
           parsedRooms.forEach((room, index) => {
@@ -155,7 +160,7 @@ const SingleFloorPlan = () => {
         sessionStorage.setItem("GridWidth", plotWidth);
         sessionStorage.setItem("rooms", JSON.stringify(parsedRooms));
         sessionStorage.setItem("desks", JSON.stringify(parsedDesks));
-        
+        sessionStorage.setItem("CAI",Creater_Account_ID);
         //set the url
         router.replace({
           pathname: router.pathname,
@@ -179,11 +184,13 @@ const SingleFloorPlan = () => {
       let floorPlan = JSON.parse(sessionStorage.getItem("FloorPlan"));
       let rooms = JSON.parse(sessionStorage.getItem("rooms"));
       let desks = JSON.parse(sessionStorage.getItem("desks"));
+      let Creater_Account_ID = sessionStorage.getItem("CAI");
 
       setFloorPlan(floorPlan);
       setGridSizeValue(gridSize);
       setPlotHeight(gridHeight);
       setPlotWidth(gridWidth);
+      setCreater_Account_ID(Creater_Account_ID);
 
       if (rooms) {
         rooms.forEach((room, index) => {
@@ -604,7 +611,7 @@ const SingleFloorPlan = () => {
       sessionStorage.setItem("GridSize", gridSizeValue);
       sessionStorage.setItem("GridHeight", plotHeight);
       sessionStorage.setItem("GridWidth", plotWidth);
-
+      sessionStorage.setItem("CAI", Creater_Account_ID);
       sessionStorage.setItem("rooms", JSON.stringify(rooms));
       sessionStorage.setItem("desks", JSON.stringify(desks));
 
