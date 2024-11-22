@@ -387,15 +387,18 @@ const DeskBookingVisualizer = () => {
     setTooltip({ show: false, x: 0, y: 0, content: '' });
   };
 
-  const handleCellClick = (interval, slot, desk, allDesks) => {
+  const handleCellClick = (interval, slot, desk) => {
     const content = slot
     //? `${interval}: ${slot.Status} - ${slot.SpaceLeft} seats left`
     ? `${desk.deskId}?${desk.deskName}?${interval}?${slot.Status}?${slot.SpaceLeft}`//`${interval}: ${slot.Status} - ${slot.SpaceLeft} seats left`
     : 'No Data';
 
     setSelectedCells(prevSelected => {
+      const [deskId,deskName,intervalStartTime,deskStatus,seatsLeft] = cellContent.split("?");
+      if (deskStatus === "booked"){
+        return;
+      }
       const isAlreadySelected = prevSelected.includes(content);
-      allDesks.availability[interval].status = "selected"
       
       if (isAlreadySelected) {
         return prevSelected.filter(item => item !== content);
@@ -539,187 +542,3 @@ const DeskBookingVisualizer = () => {
 };
 
 export default DeskBookingVisualizer;
-/*
-// Your existing constants and data remain the same...
-
-const DeskBookingVisualizer = () => {
-  const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, content: '' });
-  const [selectedCells, setSelectedCells] = useState([]); // To store selected cells' content
-
-  const handleMouseEnter = (e, content) => {
-    const rect = e.target.getBoundingClientRect();
-    setTooltip({
-      show: true,
-      x: rect.x + rect.width / 2,
-      y: rect.y - 10,
-      content
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setTooltip({ show: false, x: 0, y: 0, content: '' });
-  };
-
-  const handleCellClick = (interval, slot) => {
-    const content = slot
-      ? `${interval}: ${slot.Status} - ${slot.SpaceLeft} seats left`
-      : 'No Data';
-
-    setSelectedCells(prevSelected => {
-      const isAlreadySelected = prevSelected.includes(content);
-      if (isAlreadySelected) {
-        // Remove cell if already selected
-        return prevSelected.filter(item => item !== content);
-      } else {
-        // Add new cell to the selection
-        return [...prevSelected, content];
-      }
-    });
-  };
-
-  return (
-    <div className={styles.visualizerContainer}>
-      {tooltip.show && (
-        <div
-          className={styles.tooltip}
-          style={{
-            top: `${tooltip.y}px`,
-            left: `${tooltip.x}px`
-          }}
-        >
-          {tooltip.content}
-        </div>
-      )}
-      <table className={styles.visualizerTable}>
-        <thead>
-          <tr>
-            <th>Desk</th>
-            {TIME_INTERVALS.map(interval => (
-              <th key={interval}>{interval}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {deskBookings.map(desk => (
-            <tr key={desk.deskName}>
-              <td>{desk.deskName}</td>
-              {TIME_INTERVALS.map(interval => {
-                const slot = desk.availability[interval];
-                const content = slot
-                  ? `${interval}: ${slot.Status} - ${slot.SpaceLeft} seats left`
-                  : 'No Data';
-                const status = desk.availability[interval]?.Status || 'available';
-                return (
-                  <td
-                    key={interval}
-                    className={`${styles[`statusCell${status}`]} ${
-                      selectedCells.includes(content) ? styles.selected : ''
-                    }`}
-                    onMouseEnter={e => handleMouseEnter(e, content)}
-                    onMouseLeave={handleMouseLeave}
-                    onClick={() => handleCellClick(interval, slot)}
-                  >
-                    {slot?.Status === STATUS.PARTIAL ? `${slot.SpaceLeft}` : ''}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className={styles.selectedCellsContainer}>
-        <h3>Selected Cells:</h3>
-        {selectedCells.length > 0 ? (
-          <ul>
-            {selectedCells.map((cellContent, index) => (
-              <li key={index}>{cellContent}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>No cells selected.</p>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default DeskBookingVisualizer;
-
-*/
-
-
-/*
-const DeskBookingVisualizer = () => {
-  const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, content: '' });
-
-  const handleMouseEnter = (e, content) => {
-    const rect = e.target.getBoundingClientRect();
-    setTooltip({
-      show: true,
-      x: rect.x + rect.width / 2,
-      y: rect.y - 10,
-      content
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setTooltip({ show: false, x: 0, y: 0, content: '' });
-  };
-
-  return (
-    <div className={styles.visualizerContainer}>
-      {tooltip.show && (
-        <div
-          className={styles.tooltip}
-          style={{
-            top: `${tooltip.y}px`,
-            left: `${tooltip.x}px`
-          }}
-        >
-          {tooltip.content}
-        </div>
-      )}
-      <table className={styles.visualizerTable}>
-        <thead>
-          <tr>
-            <th>Desk</th>
-            {TIME_INTERVALS.map(interval => (
-              <th key={interval}>{interval}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {updatedDesksFromJSON.map(desk => (
-            <tr key={desk.deskName}>
-              <td>{desk.deskName}</td>
-              {TIME_INTERVALS.map(interval => {
-                const slot = desk.availability[interval];
-                const content = slot
-                  ? `${interval}: ${slot.Status.toUpperCase()} - ${slot.SpaceLeft} seats left`
-                  : 'No Data';
-                const status = desk.availability[interval].Status || 'selected';
-                console.log("className = %s", `statusCell${status}`);
-                return (
-                  <td
-                    key={interval}
-                    className={styles[`statusCell${status}`]}
-                    onMouseEnter={e => handleMouseEnter(e, content)}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    {slot?.Status === STATUS.PARTIAL ? `${slot.SpaceLeft}` : ''}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-};
-
-
-
-
-
-export default DeskBookingVisualizer; */
