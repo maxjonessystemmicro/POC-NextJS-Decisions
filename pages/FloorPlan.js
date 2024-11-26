@@ -10,6 +10,7 @@ import {
   Image as KonvaImage,
   Rect,
 } from "react-konva";
+import TimeDropdowns from "./OpeningHours";
 
 // Dynamically import Konva components to avoid server-side rendering issues
 const DynamicStage = dynamic(
@@ -69,6 +70,15 @@ const SingleFloorPlan = () => {
   const stageRef = useRef(null);
   const router = useRouter();
 
+  const [openingTime, setOpeningTime] = useState('');
+  const [closingTime, setClosingTime] = useState('');
+
+  // Handler to update time data
+  const handleTimeChange = (times) => {
+    setOpeningTime(times.openingTime);
+    setClosingTime(times.closingTime);
+  };
+
   useEffect(() => {
     //methods for starting
     //1. session storage is empty, and the url is empty
@@ -115,6 +125,7 @@ const SingleFloorPlan = () => {
         setPlotWidth(parsedFloorPlan.Grid_Width);
         setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
 
+
         if (parsedRooms) {
           parsedRooms.forEach((room, index) => {
             room.Internal_ID = index;
@@ -155,6 +166,8 @@ const SingleFloorPlan = () => {
         sessionStorage.setItem("GridWidth", plotWidth);
         sessionStorage.setItem("rooms", JSON.stringify(parsedRooms));
         sessionStorage.setItem("desks", JSON.stringify(parsedDesks));
+        sessionStorage.setItem("openingTime", JSON.stringify(openingTime))
+        sessionStorage.setItem("closingTime", JSON.stringify(closingTime))
         
         //set the url
         router.replace({
@@ -179,11 +192,16 @@ const SingleFloorPlan = () => {
       let floorPlan = JSON.parse(sessionStorage.getItem("FloorPlan"));
       let rooms = JSON.parse(sessionStorage.getItem("rooms"));
       let desks = JSON.parse(sessionStorage.getItem("desks"));
+      let openingTime = JSON.parse(sessionStorage.getItem("openingTime"));
+      let closingTime = JSON.parse(sessionStorage.getItem("closingTime"));
+
 
       setFloorPlan(floorPlan);
       setGridSizeValue(gridSize);
       setPlotHeight(gridHeight);
       setPlotWidth(gridWidth);
+      setOpeningTime(openingTime);
+      setClosingTime(closingTime);
 
       if (rooms) {
         rooms.forEach((room, index) => {
@@ -251,7 +269,6 @@ const SingleFloorPlan = () => {
                 Grid_Size: gridSizeValue,
                 Grid_Height: plotHeight,
                 Grid_Width: plotWidth,
-              
                 FloorPlan_Image_Position: imagePosition,
               },
               Rooms: rooms,
@@ -622,6 +639,8 @@ const SingleFloorPlan = () => {
       }
     }
   };
+
+  
 
   return (
     <div
@@ -1042,6 +1061,7 @@ const SingleFloorPlan = () => {
                 >
                   Draw Floorplan
                 </button>
+                <TimeDropdowns onTimeChange={handleTimeChange}/>
               </div>
             </div>
 
