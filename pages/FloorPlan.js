@@ -11,6 +11,7 @@ import {
   Rect,
 } from "react-konva";
 import TimeDropdowns from "./OpeningHours";
+import DoubleSidedArrow from './DoubleSidedArrow';
 
 // Dynamically import Konva components to avoid server-side rendering issues
 const DynamicStage = dynamic(
@@ -28,6 +29,7 @@ const PLOT_CONFIG = { width: 54, height: 38 };
 const SingleFloorPlan = () => {
   // State variables for managing floor plan data and UI states
   const [floorPlan, setFloorPlan] = useState(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 }); 
   const [plotHeight, setPlotHeight] = useState(PLOT_CONFIG.height * gridSize);
   const [plotWidth, setPlotWidth] = useState(PLOT_CONFIG.width * gridSize);
   const [gridSizeValue, setGridSizeValue] = useState(gridSize);
