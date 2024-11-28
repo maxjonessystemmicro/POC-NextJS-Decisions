@@ -641,7 +641,6 @@ const SingleFloorPlan = () => {
       }
     }
   };
-
   
 
   return (
@@ -1063,7 +1062,7 @@ const SingleFloorPlan = () => {
                 >
                   Draw Floorplan
                 </button>
-                <TimeDropdowns onTimeChange={handleTimeChange}/>
+                
               </div>
             </div>
 
@@ -1083,61 +1082,7 @@ const SingleFloorPlan = () => {
                 />
               )}
 
-              <div
-                style={{
-                  backgroundColor: "#384A8E",
-                  padding: "15px",
-                  zIndex: 0,
-                  paddingBottom: "10px",
-                }}
-              >
-                <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>
-                  Design Rooms
-                </h2>
-                <button
-                  onClick={toggleDrawRoom}
-                  style={{
-                    backgroundColor: isDrawingRoom ? "darkgreen" : "darkblue",
-                    color: "white",
-                    padding: "10px",
-                    marginRight: "10px",
-                    borderRadius: "6px",
-                    marginTop: "5px",
-                  }}
-                  disabled={!floorPlan || isAddingDesk}
-                >
-                  {isDrawingRoom ? "Stop Drawing Room" : "Draw Room"}
-                </button>
-                {selectedRoom && (
-                  <button
-                    onClick={deleteSelectedRoom}
-                    style={{
-                      backgroundColor: "purple",
-                      color: "white",
-                      padding: "10px",
-                      marginRight: "10px",
-                      borderRadius: "6px",
-                      marginTop: "5px",
-                    }}
-                  >
-                    Delete Room
-                  </button>
-                )}
-                {(selectedRoom || selectedDesk) && (
-                  <button
-                    onClick={handleEditRoom}
-                    style={{
-                      backgroundColor: "green",
-                      color: "white",
-                      padding: "10px",
-                      margin: "10px 0",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    Edit Room
-                  </button>
-                )}
-              </div>
+
             </div>
             <div style={{ width: "100%", position: "relative" }}>
               {/* Grey overlay when disabled */}
@@ -1302,7 +1247,66 @@ const SingleFloorPlan = () => {
               >
                 ↓
               </button>
+              <div>
+             <TimeDropdowns onTimeChange={handleTimeChange}/>
+              </div>
             </div>
+
+            <div
+                style={{
+                  backgroundColor: "#384A8E",
+                  padding: "15px",
+                  zIndex: 0,
+                  paddingBottom: "10px",
+                }}
+              >
+                <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>
+                  Design Rooms
+                </h2>
+                <button
+                  onClick={toggleDrawRoom}
+                  style={{
+                    backgroundColor: isDrawingRoom ? "darkgreen" : "darkblue",
+                    color: "white",
+                    padding: "10px",
+                    marginRight: "10px",
+                    borderRadius: "6px",
+                    marginTop: "5px",
+                  }}
+                  disabled={!floorPlan || isAddingDesk}
+                >
+                  {isDrawingRoom ? "Stop Drawing Room" : "Draw Room"}
+                </button>
+                {selectedRoom && (
+                  <button
+                    onClick={deleteSelectedRoom}
+                    style={{
+                      backgroundColor: "purple",
+                      color: "white",
+                      padding: "10px",
+                      marginRight: "10px",
+                      borderRadius: "6px",
+                      marginTop: "5px",
+                    }}
+                  >
+                    Delete Room
+                  </button>
+                )}
+                {(selectedRoom || selectedDesk) && (
+                  <button
+                    onClick={handleEditRoom}
+                    style={{
+                      backgroundColor: "green",
+                      color: "white",
+                      padding: "10px",
+                      margin: "10px 0",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    Edit Room
+                  </button>
+                )}
+              </div>
 
             <div
               style={{
