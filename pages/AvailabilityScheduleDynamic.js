@@ -1,242 +1,231 @@
-import React, { useState } from 'react';
-import styles from'./DeskBookingVisualizer.module.css'; // For custom styling
-
+import React, { useState } from "react";
+import styles from "./DeskBookingVisualizer.module.css"; // For custom styling
 
 // Define the constants for time intervals
 const TIME_INTERVALS = Array.from({ length: 48 }, (_, index) => {
-    const hours = String(Math.floor(index / 2)).padStart(2, '0');
-    const minutes = index % 2 === 0 ? '00' : '30';
-    return `${hours}:${minutes}`;
-  });
-  
-  // Define statuses
-  const STATUS = {
-    AVAILABLE: 'available',
-    BOOKED: 'booked',
-    PARTIAL: 'partial'
-  };
-  
-  // Sample data structure for desks and bookings
-  const deskBookings = [
-    {
-      deskName: 'Cybertheque Pod 1',
-      availability: {
-        '00:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '00:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '01:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '01:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '02:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '02:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '03:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '03:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '04:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '04:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '05:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '05:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '06:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '06:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '07:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '07:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '08:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '08:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '09:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '09:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '10:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '10:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '11:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '11:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '12:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '12:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '13:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-        '13:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '14:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '14:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '15:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '15:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '16:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '16:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '17:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '17:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '18:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '18:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '19:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '19:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '20:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '20:30': { status: STATUS.PARTIAL, spaceLeft: 4 },
-        '21:00': { status: STATUS.PARTIAL, spaceLeft: 4 },
-        '21:30': { status: STATUS.PARTIAL, spaceLeft: 4 },
-        '22:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '22:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '23:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-        '23:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-      },
+  const hours = String(Math.floor(index / 2)).padStart(2, "0");
+  const minutes = index % 2 === 0 ? "00" : "30";
+  return `${hours}:${minutes}`;
+});
+
+// Define statuses
+const STATUS = {
+  AVAILABLE: "available",
+  BOOKED: "booked",
+  PARTIAL: "partial",
+};
+
+// Sample data structure for desks and bookings
+const deskBookings = [
+  {
+    deskName: "Cybertheque Pod 1",
+    availability: {
+      "00:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "00:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "01:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "01:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "02:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "02:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "03:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "03:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "04:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "04:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "05:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "05:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "06:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "06:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "07:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "07:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "08:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "08:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "09:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "09:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "10:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "10:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "11:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "11:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "12:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "12:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "13:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "13:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "14:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "14:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "15:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "15:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "16:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "16:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "17:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "17:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "18:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "18:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "19:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "19:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "20:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "20:30": { status: STATUS.PARTIAL, spaceLeft: 4 },
+      "21:00": { status: STATUS.PARTIAL, spaceLeft: 4 },
+      "21:30": { status: STATUS.PARTIAL, spaceLeft: 4 },
+      "22:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "22:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "23:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "23:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
     },
-    {
-      deskName: 'Cybertheque Pod 2',
-      remainingCapacity: 5,
-      availability: {
-        '00:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '00:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '01:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '01:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '02:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '02:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '03:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '03:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '04:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '04:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '05:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '05:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '06:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '06:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '07:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '07:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '08:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '08:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '09:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '09:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '10:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '10:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '11:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '11:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '12:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '12:30': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '13:00': { status: STATUS.BOOKED, spaceLeft: 0 },
-    '13:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '14:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '14:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '15:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '15:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '16:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '16:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '17:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '17:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '18:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '18:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '19:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '19:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '20:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '20:30': { status: STATUS.PARTIAL, spaceLeft: 4 },
-    '21:00': { status: STATUS.PARTIAL, spaceLeft: 4 },
-    '21:30': { status: STATUS.PARTIAL, spaceLeft: 4 },
-    '22:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '22:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '23:00': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-    '23:30': { status: STATUS.AVAILABLE, spaceLeft: 5 },
-      },
+  },
+  {
+    deskName: "Cybertheque Pod 2",
+    remainingCapacity: 5,
+    availability: {
+      "00:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "00:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "01:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "01:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "02:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "02:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "03:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "03:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "04:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "04:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "05:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "05:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "06:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "06:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "07:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "07:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "08:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "08:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "09:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "09:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "10:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "10:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "11:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "11:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "12:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "12:30": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "13:00": { status: STATUS.BOOKED, spaceLeft: 0 },
+      "13:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "14:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "14:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "15:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "15:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "16:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "16:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "17:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "17:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "18:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "18:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "19:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "19:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "20:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "20:30": { status: STATUS.PARTIAL, spaceLeft: 4 },
+      "21:00": { status: STATUS.PARTIAL, spaceLeft: 4 },
+      "21:30": { status: STATUS.PARTIAL, spaceLeft: 4 },
+      "22:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "22:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "23:00": { status: STATUS.AVAILABLE, spaceLeft: 5 },
+      "23:30": { status: STATUS.AVAILABLE, spaceLeft: 5 },
     },
-  ];
-  
-  
- //booking availability conversion 
+  },
+];
 
-  function findTimeIntervalIndex(timeString){
-    return TIME_INTERVALS.findIndex(interval => interval === timeString);
-  }
+//booking availability conversion
 
-  function convertToInterval(date){
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const intervalIndex =  hours * 2 + (minutes >= 30 ? 1 : 0);
-    return TIME_INTERVALS[intervalIndex];
-  }
+function findTimeIntervalIndex(timeString) {
+  return TIME_INTERVALS.findIndex((interval) => interval === timeString);
+}
 
-  function processBooking(availability, startTime, endTime){
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+function convertToInterval(date) {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const intervalIndex = hours * 2 + (minutes >= 30 ? 1 : 0);
+  return TIME_INTERVALS[intervalIndex];
+}
 
-    const startInterval = convertToInterval(start);
-    const endInterval = convertToInterval(end);
+function processBooking(availability, startTime, endTime) {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
 
-    const startIdx = findTimeIntervalIndex(startInterval);
-    const endIdx = findTimeIntervalIndex(endInterval);
-    console.log("start interval id: %i", startIdx);
-    console.log("end interval id: %i", endIdx)
+  const startInterval = convertToInterval(start);
+  const endInterval = convertToInterval(end);
 
-    for (let i = startIdx; i <= endIdx; i++){
-      const interval = TIME_INTERVALS[i];
+  const startIdx = findTimeIntervalIndex(startInterval);
+  const endIdx = findTimeIntervalIndex(endInterval);
+  console.log("start interval id: %i", startIdx);
+  console.log("end interval id: %i", endIdx);
 
-      //Decrease SpaceLeft by 1 if there are seats available
-      console.log("original availability: %i", availability[interval].SpaceLeft);
-      if(availability[interval].SpaceLeft > 0){
-        availability[interval].SpaceLeft -= 1;
+  for (let i = startIdx; i <= endIdx; i++) {
+    const interval = TIME_INTERVALS[i];
+
+    //Decrease SpaceLeft by 1 if there are seats available
+    console.log("original availability: %i", availability[interval].SpaceLeft);
+    if (availability[interval].SpaceLeft > 0) {
+      availability[interval].SpaceLeft -= 1;
 
       // Update status based on remaining space
-        if (availability[interval].SpaceLeft === 0) {
-          availability[interval].Status = STATUS.BOOKED;
-        } else {
-          availability[interval].Status = STATUS.PARTIAL;
-        }
-        console.log("new availability: %i", availability[interval].SpaceLeft);
-        console.log("new status: %s", String(availability[interval].Status));
+      if (availability[interval].SpaceLeft === 0) {
+        availability[interval].Status = STATUS.BOOKED;
+      } else {
+        availability[interval].Status = STATUS.PARTIAL;
       }
-
+      console.log("new availability: %i", availability[interval].SpaceLeft);
+      console.log("new status: %s", String(availability[interval].Status));
     }
-    return availability
+  }
+  return availability;
+}
 
+// Utility function to initialize desk availability with all slots as "available"
+function initializeDeskAvailability(capacity) {
+  const availability = {};
+  TIME_INTERVALS.forEach((time) => {
+    availability[time] = {
+      Status: "available",
+      SpaceLeft: capacity,
+    };
+  });
+  return availability;
+}
+
+function parseDeskData(deskData) {
+  return deskData.map((desk) => ({
+    deskName: desk.Desk_SpaceName,
+    deskId: desk.DeskID,
+    //remainingCapacity: Number(desk.Capacity),
+    availability: initializeDeskAvailability(Number(desk.Capacity)),
+  }));
+}
+
+// Example of initializing a desk with default availability
+const newDesk = {
+  deskName: "Cybertheque Pod 3",
+  availability: initializeDeskAvailability(),
+};
+
+// Add this new desk to the deskBookings array
+deskBookings.push(newDesk);
+
+//function that takes the bookings payload and updates all the desks
+
+function updateDeskAvailability(deskBookings, bookings) {
+  function findDeskById(deskId) {
+    return deskBookings.find((desk) => desk.deskId === deskId);
   }
 
-
-  // Utility function to initialize desk availability with all slots as "available"
-  function initializeDeskAvailability(capacity) {
-    const availability = {};
-    TIME_INTERVALS.forEach(time => {
-      availability[time] = {
-        Status: 'available',
-        SpaceLeft: capacity
-      };
-    });
-    return availability;
-  }
-  
-
-  function parseDeskData(deskData){
-    return deskData.map(desk => ({
-      deskName: desk.Desk_SpaceName,
-      deskId: desk.DeskID,
-      //remainingCapacity: Number(desk.Capacity),
-      availability: initializeDeskAvailability(Number(desk.Capacity)),
-    }));
-  }
-
-  // Example of initializing a desk with default availability
-  const newDesk = {
-    deskName: 'Cybertheque Pod 3',
-    availability: initializeDeskAvailability(),
-  };
-  
-  // Add this new desk to the deskBookings array
-  deskBookings.push(newDesk);
-
-
-
-  //function that takes the bookings payload and updates all the desks
-
-
-  function updateDeskAvailability(deskBookings, bookings) {
-
-    function findDeskById(deskId){
-      return deskBookings.find(desk => desk.deskId === deskId);
+  bookings.forEach((booking) => {
+    const desk = findDeskById(booking.DeskID);
+    if (desk) {
+      const newAvailability = processBooking(
+        desk.availability,
+        booking.StartTime,
+        booking.EndTime
+      );
+      desk.availability = newAvailability;
     }
-
-    bookings.forEach(booking => {
-      const desk = findDeskById(booking.DeskID);
-      if (desk){
-        const newAvailability = processBooking(
-          desk.availability,
-          booking.StartTime,
-          booking.EndTime
-        );
-        desk.availability = newAvailability
-      }
-    })
-    return deskBookings;
-
-  }
+  });
+  return deskBookings;
+}
 
 // using sample data to generate the schedule
 
-const desksJSON =  `[
+const desksJSON = `[
   {
       \"ID\": \"01JBAE7X0953QDAAQC78NAZE48\",
       \"Amenities\": [
@@ -361,16 +350,23 @@ const bookingsJSON = `[
         \"DeletedBy\": null,
         \"DeletedOn\": \"1753-01-01T00:00:00\"
     }
-]`
-
+]`;
 
 const parsedDesks = parseDeskData(JSON.parse(desksJSON));
-const updatedDesksFromJSON = updateDeskAvailability(parsedDesks,JSON.parse(bookingsJSON))
+const updatedDesksFromJSON = updateDeskAvailability(
+  parsedDesks,
+  JSON.parse(bookingsJSON)
+);
 
-const newlyupdatedDesksFromJSON = updatedDesksFromJSON 
+const newlyupdatedDesksFromJSON = updatedDesksFromJSON;
 
 const DeskBookingVisualizer = () => {
-  const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, content: '' });
+  const [tooltip, setTooltip] = useState({
+    show: false,
+    x: 0,
+    y: 0,
+    content: "",
+  });
   const [selectedCells, setSelectedCells] = useState([]);
 
   const handleMouseEnter = (e, content) => {
@@ -379,29 +375,30 @@ const DeskBookingVisualizer = () => {
       show: true,
       x: rect.x + rect.width / 2,
       y: rect.y - 10,
-      content
+      content,
     });
   };
 
   const handleMouseLeave = () => {
-    setTooltip({ show: false, x: 0, y: 0, content: '' });
+    setTooltip({ show: false, x: 0, y: 0, content: "" });
   };
 
   const handleCellClick = (interval, slot, desk) => {
     const content = slot
-    //? `${interval}: ${slot.Status} - ${slot.SpaceLeft} seats left`
-    ? `${desk.deskId}?${desk.deskName}?${interval}?${slot.Status}?${slot.SpaceLeft}`//`${interval}: ${slot.Status} - ${slot.SpaceLeft} seats left`
-    : 'No Data';
+      ? //? `${interval}: ${slot.Status} - ${slot.SpaceLeft} seats left`
+        `${desk.deskId}?${desk.deskName}?${interval}?${slot.Status}?${slot.SpaceLeft}` //`${interval}: ${slot.Status} - ${slot.SpaceLeft} seats left`
+      : "No Data";
 
-    setSelectedCells(prevSelected => {
-      const [deskId,deskName,intervalStartTime,deskStatus,seatsLeft] = cellContent.split("?");
-      if (deskStatus === "booked"){
+    setSelectedCells((prevSelected) => {
+      const [deskId, deskName, intervalStartTime, deskStatus, seatsLeft] =
+        cellContent.split("?");
+      if (deskStatus === "booked") {
         return;
       }
       const isAlreadySelected = prevSelected.includes(content);
-      
+
       if (isAlreadySelected) {
-        return prevSelected.filter(item => item !== content);
+        return prevSelected.filter((item) => item !== content);
       } else {
         return [...prevSelected, content];
       }
@@ -422,20 +419,23 @@ const DeskBookingVisualizer = () => {
         })
       );
       */
-  
+
       // If a matching desk is found, extract the data for the JSON structure
       if (true) {
         //new code
         //new code end
-        const [deskId,deskName,intervalStartTime,deskStatus,seatsLeft] = cellContent.split("?");
-  
+        const [deskId, deskName, intervalStartTime, deskStatus, seatsLeft] =
+          cellContent.split("?");
+
         return {
           ID: "2134rfwsefrdgbver456t",
           RoomID: "Room_ID_Placeholder", // Add the corresponding RoomID if available
           FloorPlanID: "FloorPlan_ID_Placeholder", // Add the corresponding FloorPlanID if available
           DeskID: deskId, // Use the correct deskId here
           EndTime: "", // Adjust date and time
-          StartTime: new Date(`2024-11-12T${intervalStartTime.trim()}`).toISOString(), // Adjust date and time
+          StartTime: new Date(
+            `2024-11-12T${intervalStartTime.trim()}`
+          ).toISOString(), // Adjust date and time
           DeskSpaceEntityID: "DeskSpaceEntity_ID_Placeholder", // Add if applicable
           AccountID: null,
           Hidden: false,
@@ -458,13 +458,15 @@ const DeskBookingVisualizer = () => {
           DeletedOn: "1753-01-01T00:00:00",
         };
       }
-  
+
       return null; // Fallback if no match is found
     });
-  
-    console.log("Booking Data:", JSON.stringify(bookingData.filter(Boolean), null, 2));
+
+    console.log(
+      "Booking Data:",
+      JSON.stringify(bookingData.filter(Boolean), null, 2)
+    );
   };
-  
 
   return (
     <div className={styles.visualizerContainer}>
@@ -473,7 +475,7 @@ const DeskBookingVisualizer = () => {
           className={styles.tooltip}
           style={{
             top: `${tooltip.y}px`,
-            left: `${tooltip.x}px`
+            left: `${tooltip.x}px`,
           }}
         >
           {tooltip.content}
@@ -482,33 +484,35 @@ const DeskBookingVisualizer = () => {
       <table className={styles.visualizerTable}>
         <thead>
           <tr>
-            <th>Desk</th>
-            {TIME_INTERVALS.map(interval => (
-              <th key={interval}>{interval}</th>
+            <th style={{width:'50px'}}>Desk</th>
+            {updatedDesksFromJSON.map((desk) => (
+              <th key={desk.deskName}>{desk.deskName}</th>
             ))}
+          
           </tr>
         </thead>
         <tbody>
-          {updatedDesksFromJSON.map(desk => (
-            <tr key={desk.deskName}>
-              <td>{desk.deskName}</td>
-              {TIME_INTERVALS.map(interval => {
+          {TIME_INTERVALS.map((interval) => (
+            <tr key={interval}>
+              <td>{interval}</td>
+              {updatedDesksFromJSON.map((desk) => {
                 const slot = desk.availability[interval];
                 const content = slot
                   ? `${interval}: ${slot.Status} - ${slot.SpaceLeft} seats left`
-                  : 'No Data';
-                const status = desk.availability[interval]?.Status || 'available';
+                  : "No Data";
+                const status =
+                  desk.availability[interval]?.Status || "available";
                 return (
                   <td
-                    key={interval}
+                    key={desk.deskName}
                     className={`${styles[`statusCell${status}`]} ${
-                      selectedCells.includes(content) ? styles.selected : ''
+                      selectedCells.includes(content) ? styles.selected : ""
                     }`}
-                    onMouseEnter={e => handleMouseEnter(e, content)}
+                    onMouseEnter={(e) => handleMouseEnter(e, content)}
                     onMouseLeave={handleMouseLeave}
                     onClick={() => handleCellClick(interval, slot, desk)}
                   >
-                    {slot?.Status === STATUS.PARTIAL ? `${slot.SpaceLeft}` : ''}
+                    {slot?.Status === STATUS.PARTIAL ? `${slot.SpaceLeft}` : ""}
                   </td>
                 );
               })}
@@ -522,9 +526,19 @@ const DeskBookingVisualizer = () => {
           <>
             <ul>
               {selectedCells.map((cellContent, index) => {
-                const [deskId,deskName,intervalStartTime,deskStatus,seatsLeft] = cellContent.split("?");
-                return <li key={index}>{`Desk ${deskName} selected for : ${intervalStartTime}`}</li>;
-})}
+                const [
+                  deskId,
+                  deskName,
+                  intervalStartTime,
+                  deskStatus,
+                  seatsLeft,
+                ] = cellContent.split("?");
+                return (
+                  <li
+                    key={index}
+                  >{`Desk ${deskName} selected for : ${intervalStartTime}`}</li>
+                );
+              })}
             </ul>
             <button
               className={styles.confirmButton}
