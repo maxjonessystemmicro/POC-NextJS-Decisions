@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
+import styles from "./DeskBookingVisualizer.module.css"; // For custom styling
 import {
   Stage,
   Layer,
@@ -63,15 +64,121 @@ const FloorPlanBooking = () => {
   const [DeskConfigs, setDeskConfigs] = useState(null);
   const [Bookings, setBookings] = useState(null);
 
-  const [Creater_Account_ID, setCreater_Account_ID] = useState(
-    null
-  );
+  const [updatedDesksFromJSON, setupdatedDesksFromJSON] = useState(null);
+
+  const [Creater_Account_ID, setCreater_Account_ID] = useState(null);
 
   let [RoomIndex, setRoomIndex] = useState(0);
   let [DeskIndex, setDeskIndex] = useState(0);
 
   const stageRef = useRef(null);
   const router = useRouter();
+  // Define the constants for time intervals
+  let TIME_INTERVALS = Array.from({ length: 48 }, (_, index) => {
+    const hours = String(Math.floor(index / 2)).padStart(2, "0");
+    const minutes = index % 2 === 0 ? "00" : "30";
+    return `${hours}:${minutes}`;
+  });
+
+  // Define statuses
+  const STATUS = {
+    AVAILABLE: "available",
+    BOOKED: "booked",
+    PARTIAL: "partial",
+  };
+
+  //booking availability conversion
+
+  function findTimeIntervalIndex(timeString) {
+    return TIME_INTERVALS.findIndex((interval) => interval === timeString);
+  }
+
+  function convertToInterval(date) {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const intervalIndex = hours * 2 + (minutes >= 30 ? 1 : 0);
+    return TIME_INTERVALS[intervalIndex];
+  }
+
+  function processBooking(availability, startTime, endTime) {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    const startInterval = convertToInterval(start);
+    const endInterval = convertToInterval(end);
+
+    const startIdx = findTimeIntervalIndex(startInterval);
+    const endIdx = findTimeIntervalIndex(endInterval);
+   
+    for (let i = startIdx; i <= endIdx; i++) {
+      const interval = TIME_INTERVALS[i];
+
+  
+      if (availability[interval].SpaceLeft > 0) {
+        availability[interval].SpaceLeft -= 1;
+
+        // Update status based on remaining space
+        if (availability[interval].SpaceLeft === 0) {
+          availability[interval].Status = STATUS.BOOKED;
+        } else {
+          availability[interval].Status = STATUS.PARTIAL;
+        }
+      
+      }
+    }
+    return availability;
+  }
+
+  // Utility function to initialize desk availability with all slots as "available"
+  function initializeDeskAvailability(capacity) {
+    let availability = {};
+    TIME_INTERVALS.forEach((time) => {
+      availability[time] = {
+        Status: "available",
+        SpaceLeft: capacity,
+      };
+    });
+    return availability;
+  }
+
+  function parseDeskData(deskData) {
+
+    return deskData.map((desk) => ({
+      deskName: desk.Desk_SpaceName,
+      deskId: desk.DeskID,
+      //remainingCapacity: Number(desk.Capacity),
+      availability: initializeDeskAvailability(desk.Capacity),
+    }));
+  }
+
+  //function that takes the bookings payload and updates all the desks
+
+  function updateDeskAvailability(deskConfigs, bookings) {
+
+
+    bookings.forEach((booking) => {
+      const desk = deskConfigs.find(
+        (config) => booking.DeskID === config.deskId
+      );
+    
+      if (desk) {
+  
+        const newAvailability = processBooking(
+          desk.availability,
+          booking.StartTime,
+          booking.EndTime
+        );
+     
+        desk.availability = newAvailability;
+
+ 
+      }
+    });
+
+    return deskConfigs;
+  }
+
+  // using sample data to generate the schedule
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -81,7 +188,18 @@ const FloorPlanBooking = () => {
     const Creater_Account_ID = urlParams.get("CAI");
     const Bookings = urlParams.get("Bookings");
     const Configs = urlParams.get("Configs");
-
+   
+    TIME_INTERVALS = Array.from({ length: 48 }, (_, index) => {
+      const hours = String(Math.floor(index / 2)).padStart(2, "0");
+      const minutes = index % 2 === 0 ? "00" : "30";
+      return `${hours}:${minutes}`;
+    });
+  
+    
+    if(Creater_Account_ID){
+      sessionStorage.setItem("CAI", Creater_Account_ID);
+    }
+   
     if (FloorPlans) {
       try {
         const parsedFloorPlan = JSON.parse(FloorPlans);
@@ -109,7 +227,7 @@ const FloorPlanBooking = () => {
                 );
               } else {
                 const deskConfigurations = JSON.parse(responseText);
-                if(deskConfigurations.Done.Configs){
+                if (deskConfigurations.Done.Configs) {
                   let tempDeskConfigs = deskConfigurations.Done.Configs.map(
                     (config) => {
                       let existingBooking = null;
@@ -127,16 +245,31 @@ const FloorPlanBooking = () => {
                   );
                   setDeskConfigs(tempDeskConfigs);
                   setBookings(deskConfigurations.Done.ExistingBookings);
+    
+                  let tempDeskConfigsNew = parseDeskData(deskConfigurations.Done.Configs);
+         
+                
+                  if(updatedDesksFromJSON == null){
+                    let updatedDesksFromJSON = updateDeskAvailability(
+                      tempDeskConfigsNew,
+                      deskConfigurations.Done.ExistingBookings ? deskConfigurations.Done.ExistingBookings : []
+                    );
+                    setupdatedDesksFromJSON(updatedDesksFromJSON);
   
+                  }
+                 
                   if (deskConfigurations.Done.ExistingBookings) {
-        
-  
+
+              
+                  
+
+
                     parsedDesks.forEach((desk) => {
                       const booking =
                         deskConfigurations.Done.ExistingBookings.find(
                           (booking) => booking.DeskID === desk.ID
                         );
-  
+
                       if (booking) {
                         desk.color = "#FF0000";
                         const config = tempDeskConfigs.find(
@@ -153,11 +286,10 @@ const FloorPlanBooking = () => {
                     });
                   }
                   if (deskConfigurations.Done.Amenties) {
-                  setAvailableAmenties(deskConfigurations.Done.Amenties);
+                    setAvailableAmenties(deskConfigurations.Done.Amenties);
                   }
-  
                 }
-               
+
                 setFloorPlan({
                   ID: parsedFloorPlan.ID,
                   Vertices: parsedFloorPlan.Vertices,
@@ -261,25 +393,31 @@ const FloorPlanBooking = () => {
     window.history.back();
   };
 
-  const bookEntity = async (config) => {
+  const bookEntity = async () => {
     try {
+
+
+      let selectedCellsObj = selectedCells.sort((a, b) => a.interval.localeCompare(b.interval));
+
+
+
       const response = await fetch("/api/newBookingEntity", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          FloorPlanID: floorPlan?.ID,
-          StartTime: new Date().toISOString(),
-          EndTime: new Date(new Date().setHours(new Date().getHours() + 2)).toISOString(),
-          DeskSpaceEntityID: config.ID,
+          FloorPlanID: floorPlan.ID,
+          StartTime: new Date(new Date().setHours(...selectedCellsObj[0].interval.split(':').map(Number), 0, 0)).toLocaleString(),
+          EndTime: new Date(new Date().setHours(...selectedCellsObj[selectedCellsObj.length - 1].interval.split(':').map(Number), 0, 0)).toLocaleString(),
+          DeskSpaceEntityID: selectedDeskConfig.ID,
           guest: true, // Added guest parameter as per API documentation
           outputtype: "Json", // Added outputtype parameter as per API documentation
-          DeskID: config.DeskID,
-          AccountID: Creater_Account_ID
+          DeskID: selectedDeskConfig.DeskID,
+          AccountID: Creater_Account_ID,
         }),
       });
-      console.log("hi2");
+
       const responseText = await response.text();
       if (!response.ok) {
         throw new Error(
@@ -289,7 +427,6 @@ const FloorPlanBooking = () => {
         //convert response text to floorplan object
         const responseFloorPlan = JSON.parse(responseText);
 
-        console.log(resetFloorPlan);
       }
     } catch (error) {
       console.error("Error booking entity:", error);
@@ -388,10 +525,12 @@ const FloorPlanBooking = () => {
           isPointInPolygon(clickedPosition, desk.Vertices)
         );
         setSelectedDesk(clickedDesk || null);
-        if(DeskConfigs && clickedDesk){
-          setSelectedDeskConfig(DeskConfigs.find(config => config.DeskID === clickedDesk.ID) || null);
+        if (DeskConfigs && clickedDesk) {
+          setSelectedDeskConfig(
+            DeskConfigs.find((config) => config.DeskID === clickedDesk.ID) ||
+              null
+          );
         }
-      
       }
     }
   };
@@ -491,22 +630,47 @@ const FloorPlanBooking = () => {
     }
   };
 
-  // Handle the end of desk dragging
-  const handleDeskDragEnd = () => {
-    if (isDraggingDesk && selectedDesk && tempDeskPosition) {
-      setDesks((prevDesks) =>
-        prevDesks.map((desk) =>
-          desk.Internal_ID === tempDeskPosition.Internal_ID
-            ? { ...desk, Vertices: tempDeskPosition.Vertices }
-            : desk
-        )
-      );
-      setSelectedDesk({ ...selectedDesk, Vertices: tempDeskPosition.Vertices });
-      setTempDeskPosition(null);
-    }
-    setIsDraggingDesk(false);
+  const [tooltip, setTooltip] = useState({
+    show: false,
+    x: 0,
+    y: 0,
+    content: "",
+  });
+  const [selectedCells, setSelectedCells] = useState([]);
+
+ 
+
+  const handleMouseLeave = () => {
+    setTooltip({ show: false, x: 0, y: 0, content: "" });
   };
 
+  const handleCellClick = (interval, slot, desk) => {
+   
+    const isAlreadySelected = selectedCells.filter((item) => item.DeskID == desk.deskId && item.interval == interval && item.slot == slot);
+
+
+    if(isAlreadySelected?.length> 0 ){
+      let filtered = selectedCells.filter((item) => item !== isAlreadySelected[0]);
+      setSelectedCells(filtered);
+    }else{
+      setSelectedDesk(desk);
+      setSelectedDeskConfig(
+        DeskConfigs.find((config) => config.DeskID === desk.deskId) ||
+          null
+      );
+      setSelectedCells((prevSelected) => {
+        return [...prevSelected, {DeskID:desk.deskId,interval,slot}];
+      
+    });
+    }
+   
+  };
+
+  const handleConfirmBooking = () => {
+   
+
+  
+  };
 
   return (
     <div
@@ -883,64 +1047,174 @@ const FloorPlanBooking = () => {
             display: "flex",
             flexDirection: "column",
             flexGrow: 1,
-            maxWidth: "500px",
+            maxWidth: "550px",
           }}
         >
-          <h2
-            style={{
-              color: "var(--text-color)",
-              textAlign: "center",
-              fontFamily: "var(--tile-header-text)",
-              marginBottom: "5px",
-              marginTop: "5px",
-            }}
-          >
-            Floor Plan Availability & Selected Desk
-          </h2>
-
           <div
             style={{
               width: "100%",
-              height: "500px",
+              height: "100%",
               backgroundColor: "#cfcccc",
               margin: "0 auto",
               display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
+              flexDirection: "column",
               borderRadius: "10px",
             }}
           >
-            {/* Your content goes here */}
-          {selectedDesk && DeskConfigs && selectedDeskConfig && (
-            <div style={{ padding: "10px", backgroundColor: "#f0f0f0", borderRadius: "5px" }}>
-               <p>
-                <strong>Desk Details</strong>
-              </p>
-              <p>
-                <strong>Name:</strong> {selectedDeskConfig.Desk_SpaceName}
-              </p>
-              <p>
-                <strong>Type:</strong> {selectedDeskConfig.Type}
-              </p>
-              <p>
-                <strong>Availability:</strong> {calculateAvailability(selectedDeskConfig)}
-              </p>
-              <p>
-                
-              <div>
-                <strong>Amenities:</strong>
-                <ul>
-                  {selectedDeskConfig.Amenities.map(amenityId => (
-                    <li key={amenityId}>
-                      • {AvailableAmenties.find(amenity => amenity.ID === amenityId).Name}
-                    </li>
-                  ))}
-                </ul>
+            <div
+              style={{
+                height: "30%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "#f0f0f0", // Added background color
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
+                <h2
+                  style={{
+                    color: "var(--text-color)",
+                    textAlign: "center",
+                    fontFamily: "var(--tile-header-text)",
+                    marginBottom: "5px",
+                    marginTop: "5px",
+                  }}
+                >
+                  Floor Plan Availability & Selected Desk
+                </h2>
+                {selectedDesk && DeskConfigs && selectedDeskConfig && (
+                  <div
+                    style={{
+                      padding: "10px",
+                      backgroundColor: "#ffffff", // Added background color
+                      borderRadius: "5px",
+                      marginTop: "10px", // Added margin top for vertical stacking
+                    }}
+                  >
+                    <p>
+                      <strong>Desk Details</strong>
+                    </p>
+                    <p>
+                      <strong>Name:</strong> {selectedDeskConfig.Desk_SpaceName}
+                    </p>
+                    <p>
+                      <strong>Type:</strong> {selectedDeskConfig.Type}
+                    </p>
+                    <p>
+                      <strong>Availability:</strong>{" "}
+                      {calculateAvailability(selectedDeskConfig)}
+                    </p>
+                    <p>
+                      <div>
+                        <strong>Amenities:</strong>
+                        <ul>
+                          {selectedDeskConfig.Amenities.map((amenityId) => (
+                            <li key={amenityId}>
+                              •{" "}
+                              {
+                                AvailableAmenties.find(
+                                  (amenity) => amenity.ID === amenityId
+                                ).Name
+                              }
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </p>
+                  </div>
+                )}
               </div>
-                
-              </p>
             </div>
-          )}
+            <button
+              className={styles.confirmButton}
+              onClick={bookEntity}
+            >
+              Confirm Booking
+            </button>
+            <div
+              style={{
+                height: "70%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "#e0e0e0", // Added background color
+              }}
+            >
+              
+              <div className={styles.visualizerContainer}>
+                {tooltip.show && (
+                  <div
+                    className={styles.tooltip}
+                    style={{
+                      top: `${tooltip.y}px`,
+                      left: `${tooltip.x}px`,
+                    }}
+                  >
+                    {tooltip.content}
+                  </div>
+                )}
+                <table className={styles.visualizerTable}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "50px" }}>Desk</th>
+                      {updatedDesksFromJSON?.map((desk) => (
+                        <th style={selectedDeskConfig?.DeskID == desk.deskId ? {backgroundColor:'lightblue'} : {}} key={desk.deskName}>{desk.deskName}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {updatedDesksFromJSON && TIME_INTERVALS.map((interval) => (
+                      <tr key={interval}>
+                        <td>{interval}</td>
+                        {updatedDesksFromJSON.map((desk) => {
+                          const slot = desk.availability[interval];
+                        
+                          let status =
+                            desk.availability[interval]?.Status || "available";
+                          
+                          let outcome = selectedCells?.filter(
+                            (cell) => (cell.DeskID === desk.deskId && cell.slot == slot && cell.interval == interval)
+                          )
+                          if (outcome.length > 0){
+                            status= 'selected';
+                          }
+                          return (
+                            <td
+                              key={desk.deskName}
+                              className={`${styles[`statusCell${status}`]} ${
+                                selectedCells?.filter(
+                                  (cell) => cell.DeskID === desk.ID
+                                )
+                                  ? styles.selected
+                                  : ""
+                              }`}
+                              style={selectedDeskConfig?.DeskID == desk.deskId ? {border:'lightblue'} : {}}
+                     
+                              onMouseLeave={handleMouseLeave}
+                              onClick={() =>
+                                handleCellClick(interval, slot, desk)
+                              }
+                            >
+                              {slot?.Status === STATUS.PARTIAL
+                                ? `${slot.SpaceLeft}`
+                                : ""}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                  
+                </table>
+                   
+              </div>
+            </div>
           </div>
         </div>
       </div>
