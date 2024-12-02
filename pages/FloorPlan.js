@@ -63,7 +63,7 @@ const SingleFloorPlan = () => {
   const [tempDeskPosition, setTempDeskPosition] = useState(null);
 
   const [Creater_Account_ID, setCreater_Account_ID] = useState(
-    "01HGDVRVHW8YZ0KESEY6EPA71Q"
+    null
   );
 
   let [RoomIndex, setRoomIndex] = useState(0);
@@ -87,8 +87,12 @@ const SingleFloorPlan = () => {
     // fresh start
     if (
       sessionStorage.getItem("FloorPlan") === null &&
-      window.location.search === ""
+      window.location.search.includes("CAI")
     ) {
+      const urlParams = new URLSearchParams(window.location.search);
+     
+      const Creater_Account_ID = urlParams.get("CAI");
+      setCreater_Account_ID(Creater_Account_ID);
       setType("complete");
     }
 
@@ -104,7 +108,7 @@ const SingleFloorPlan = () => {
       const FloorPlans = urlParams.get("FloorPlan");
       const Rooms = urlParams.get("Rooms");
       const Desks = urlParams.get("Desks");
-
+      const Creater_Account_ID = urlParams.get("CAI");
       try {
         const parsedFloorPlan = JSON.parse(FloorPlans);
         const parsedRooms = JSON.parse(Rooms);
@@ -126,6 +130,7 @@ const SingleFloorPlan = () => {
         setPlotHeight(parsedFloorPlan.Grid_Height);
         setPlotWidth(parsedFloorPlan.Grid_Width);
         setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
+        setCreater_Account_ID(Creater_Account_ID);
 
 
         if (parsedRooms) {
@@ -171,6 +176,7 @@ const SingleFloorPlan = () => {
         sessionStorage.setItem("openingTime", JSON.stringify(openingTime))
         sessionStorage.setItem("closingTime", JSON.stringify(closingTime))
         
+        sessionStorage.setItem("CAI",Creater_Account_ID);
         //set the url
         router.replace({
           pathname: router.pathname,
@@ -197,6 +203,7 @@ const SingleFloorPlan = () => {
       let openingTime = JSON.parse(sessionStorage.getItem("openingTime"));
       let closingTime = JSON.parse(sessionStorage.getItem("closingTime"));
 
+      let Creater_Account_ID = sessionStorage.getItem("CAI");
 
       setFloorPlan(floorPlan);
       setGridSizeValue(gridSize);
@@ -204,6 +211,7 @@ const SingleFloorPlan = () => {
       setPlotWidth(gridWidth);
       setOpeningTime(openingTime);
       setClosingTime(closingTime);
+      setCreater_Account_ID(Creater_Account_ID);
 
       if (rooms) {
         rooms.forEach((room, index) => {
@@ -623,7 +631,7 @@ const SingleFloorPlan = () => {
       sessionStorage.setItem("GridSize", gridSizeValue);
       sessionStorage.setItem("GridHeight", plotHeight);
       sessionStorage.setItem("GridWidth", plotWidth);
-
+      sessionStorage.setItem("CAI", Creater_Account_ID);
       sessionStorage.setItem("rooms", JSON.stringify(rooms));
       sessionStorage.setItem("desks", JSON.stringify(desks));
 

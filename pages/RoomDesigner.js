@@ -74,7 +74,7 @@ const RoomDesigner = () => {
   const hasFetchedConfigurationsRef = useRef(false);
 
   const [Creater_Account_ID, setCreater_Account_ID] = useState(
-    "01HGDVRVHW8YZ0KESEY6EPA71Q"
+    null
   );
 
   let [RoomIndex, setRoomIndex] = useState(0);
@@ -89,11 +89,12 @@ const RoomDesigner = () => {
       sessionStorage.getItem("GridSize") &&
       sessionStorage.getItem("GridHeight") &&
       sessionStorage.getItem("GridWidth") &&
-      sessionStorage.getItem("SelectedRoom")
+      sessionStorage.getItem("SelectedRoom")&&
+      sessionStorage.getItem("CAI")
     ) {
       let gridSize = JSON.parse(sessionStorage.getItem("GridSize"));
       let selectedRoom = JSON.parse(sessionStorage.getItem("SelectedRoom"));
-
+      setCreater_Account_ID(sessionStorage.getItem("CAI"));
       // Calculate room dimensions
       let minX = Math.min(...selectedRoom.Vertices.map((v) => v.x));
       let maxX = Math.max(...selectedRoom.Vertices.map((v) => v.x));
