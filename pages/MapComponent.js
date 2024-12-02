@@ -82,20 +82,17 @@ const FloorPlanBooking = () => {
     PARTIAL: "partial",
   };
 
+  const opening = "09:00";
+  const closing = "17:00";
 
-
-  
-  const opening = '09:00';
-  const closing = '17:00';
-
-  if(TIME_INTERVALS == null){
+  if (TIME_INTERVALS == null) {
     let TIME_INTERVALSCOPY = Array.from({ length: 48 }, (_, index) => {
       const hours = String(Math.floor(index / 2)).padStart(2, "0");
       const minutes = index % 2 === 0 ? "00" : "30";
       const time = `${hours}:${minutes}`;
       return time >= opening && time <= closing ? time : null;
     }).filter(Boolean);
-  
+
     setTIME_INTERVALS(TIME_INTERVALSCOPY);
   }
   //booking availability conversion
@@ -107,7 +104,8 @@ const FloorPlanBooking = () => {
   function convertToInterval(date) {
     const hours = date.getHours();
     const minutes = date.getMinutes();
-    const intervalIndex = (hours - parseInt(opening.split(':')[0])) * 2 + (minutes >= 30 ? 1 : 0);
+    const intervalIndex =
+      (hours - parseInt(opening.split(":")[0])) * 2 + (minutes >= 30 ? 1 : 0);
     return TIME_INTERVALS[intervalIndex];
   }
 
@@ -121,11 +119,9 @@ const FloorPlanBooking = () => {
     const startIdx = findTimeIntervalIndex(startInterval);
     const endIdx = findTimeIntervalIndex(endInterval);
 
-    
     for (let i = startIdx; i <= endIdx; i++) {
       const interval = TIME_INTERVALS[i];
 
-  
       if (availability[interval].SpaceLeft > 0) {
         availability[interval].SpaceLeft -= 1;
 
@@ -135,7 +131,6 @@ const FloorPlanBooking = () => {
         } else {
           availability[interval].Status = STATUS.PARTIAL;
         }
-      
       }
     }
     return availability;
@@ -154,7 +149,6 @@ const FloorPlanBooking = () => {
   }
 
   function parseDeskData(deskData) {
-
     return deskData.map((desk) => ({
       deskName: desk.Desk_SpaceName,
       deskId: desk.DeskID,
@@ -166,24 +160,19 @@ const FloorPlanBooking = () => {
   //function that takes the bookings payload and updates all the desks
 
   function updateDeskAvailability(deskConfigs, bookings) {
-
-
     bookings.forEach((booking) => {
       const desk = deskConfigs.find(
         (config) => booking.DeskID === config.deskId
       );
-    
+
       if (desk) {
-  
         const newAvailability = processBooking(
           desk.availability,
           booking.StartTime,
           booking.EndTime
         );
-     
-        desk.availability = newAvailability;
 
- 
+        desk.availability = newAvailability;
       }
     });
 
@@ -201,14 +190,10 @@ const FloorPlanBooking = () => {
     const Bookings = urlParams.get("Bookings");
     const Configs = urlParams.get("Configs");
 
-
-   
-    
-
-    if(Creater_Account_ID){
+    if (Creater_Account_ID) {
       sessionStorage.setItem("CAI", Creater_Account_ID);
     }
-   
+
     if (FloorPlans) {
       try {
         const parsedFloorPlan = JSON.parse(FloorPlans);
@@ -254,25 +239,22 @@ const FloorPlanBooking = () => {
                   );
                   setDeskConfigs(tempDeskConfigs);
                   setBookings(deskConfigurations.Done.ExistingBookings);
-    
-                  let tempDeskConfigsNew = parseDeskData(deskConfigurations.Done.Configs);
-         
-                
-                  if(updatedDesksFromJSON == null){
+
+                  let tempDeskConfigsNew = parseDeskData(
+                    deskConfigurations.Done.Configs
+                  );
+
+                  if (updatedDesksFromJSON == null) {
                     let updatedDesksFromJSON = updateDeskAvailability(
                       tempDeskConfigsNew,
-                      deskConfigurations.Done.ExistingBookings ? deskConfigurations.Done.ExistingBookings : []
+                      deskConfigurations.Done.ExistingBookings
+                        ? deskConfigurations.Done.ExistingBookings
+                        : []
                     );
                     setupdatedDesksFromJSON(updatedDesksFromJSON);
-  
                   }
-                 
+
                   if (deskConfigurations.Done.ExistingBookings) {
-
-              
-                  
-
-
                     parsedDesks.forEach((desk) => {
                       const booking =
                         deskConfigurations.Done.ExistingBookings.find(
@@ -404,11 +386,9 @@ const FloorPlanBooking = () => {
 
   const bookEntity = async () => {
     try {
-
-
-      let selectedCellsObj = selectedCells.sort((a, b) => a.interval.localeCompare(b.interval));
-
-
+      let selectedCellsObj = selectedCells.sort((a, b) =>
+        a.interval.localeCompare(b.interval)
+      );
 
       const response = await fetch("/api/newBookingEntity", {
         method: "POST",
@@ -417,8 +397,22 @@ const FloorPlanBooking = () => {
         },
         body: JSON.stringify({
           FloorPlanID: floorPlan.ID,
-          StartTime: new Date(new Date().setHours(...selectedCellsObj[0].interval.split(':').map(Number), 0, 0)).toLocaleString(),
-          EndTime: new Date(new Date().setHours(...selectedCellsObj[selectedCellsObj.length - 1].interval.split(':').map(Number), 0, 0)).toLocaleString(),
+          StartTime: new Date(
+            new Date().setHours(
+              ...selectedCellsObj[0].interval.split(":").map(Number),
+              0,
+              0
+            )
+          ).toLocaleString(),
+          EndTime: new Date(
+            new Date().setHours(
+              ...selectedCellsObj[selectedCellsObj.length - 1].interval
+                .split(":")
+                .map(Number),
+              0,
+              0
+            )
+          ).toLocaleString(),
           DeskSpaceEntityID: selectedDeskConfig.ID,
           guest: true, // Added guest parameter as per API documentation
           outputtype: "Json", // Added outputtype parameter as per API documentation
@@ -435,7 +429,6 @@ const FloorPlanBooking = () => {
       } else {
         //convert response text to floorplan object
         const responseFloorPlan = JSON.parse(responseText);
-
       }
     } catch (error) {
       console.error("Error booking entity:", error);
@@ -647,35 +640,33 @@ const FloorPlanBooking = () => {
   });
   const [selectedCells, setSelectedCells] = useState([]);
 
- 
-
   const handleMouseLeave = () => {
     setTooltip({ show: false, x: 0, y: 0, content: "" });
   };
 
   const handleCellClick = (interval, slot, desk) => {
-   
-    const isAlreadySelected = selectedCells.filter((item) => item.DeskID == desk.deskId && item.interval == interval && item.slot == slot);
+    const isAlreadySelected = selectedCells.filter(
+      (item) =>
+        item.DeskID == desk.deskId &&
+        item.interval == interval &&
+        item.slot == slot
+    );
 
-
-    if(isAlreadySelected?.length> 0 ){
-      let filtered = selectedCells.filter((item) => item !== isAlreadySelected[0]);
+    if (isAlreadySelected?.length > 0) {
+      let filtered = selectedCells.filter(
+        (item) => item !== isAlreadySelected[0]
+      );
       setSelectedCells(filtered);
-    }else{
-      setSelectedDesk(desks.find(d => d.ID === desk.deskId));
+    } else {
+      setSelectedDesk(desks.find((d) => d.ID === desk.deskId));
       setSelectedDeskConfig(
-        DeskConfigs.find((config) => config.DeskID === desk.deskId) ||
-          null
+        DeskConfigs.find((config) => config.DeskID === desk.deskId) || null
       );
       setSelectedCells((prevSelected) => {
-        return [...prevSelected, {DeskID:desk.deskId,interval,slot}];
-      
-    });
+        return [...prevSelected, { DeskID: desk.deskId, interval, slot }];
+      });
     }
-   
   };
-
- 
 
   return (
     <div
@@ -691,7 +682,6 @@ const FloorPlanBooking = () => {
           display: "flex",
           flexDirection: "row",
           height: "100%",
-
           justifyContent: "center",
           alignItems: "center",
         }}
@@ -707,6 +697,8 @@ const FloorPlanBooking = () => {
             backgroundColor: "white",
             border: "3px solid black",
             height: "100%",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
           <div
@@ -718,96 +710,148 @@ const FloorPlanBooking = () => {
               alignItems: "center",
               width: "100%",
               height: "100%",
+              maxHeight: "145px",
             }}
           >
-            <div style={{ padding: "15px" }}>
-              <h2 style={{ marginBottom: "10px", fontWeight: "bold" }}>
+            <div style={{ padding: "15px", width: "100%" }}>
+              <h2
+                style={{
+                  marginBottom: "10px",
+                  fontWeight: "bold",
+                  width: "100%",
+                }}
+              >
                 Filters & Tools
               </h2>
               <div
                 style={{
-                  width: "100%",
-
                   display: "flex",
                   flexDirection: "row",
-                  justifyContent: "space-between",
-                  color: "black",
+                  width: "100%",
                 }}
               >
                 <div
                   style={{
+                    width: "100%",
                     display: "flex",
-                    flexDirection: "column",
-                    gap: "10px",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    color: "black",
                   }}
                 >
                   <div
                     style={{
                       display: "flex",
-                      flexDirection: "row",
+                      flexDirection: "column",
                       gap: "10px",
                     }}
                   >
-                    <div>
-                      <label>Grid Opacity: </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={gridOpacity}
-                        onChange={(e) =>
-                          setGridOpacity(parseFloat(e.target.value))
-                        }
-                      />
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        gap: "10px",
+                      }}
+                    >
+                      <div>
+                        <label>Grid Opacity: </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={gridOpacity}
+                          onChange={(e) =>
+                            setGridOpacity(parseFloat(e.target.value))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label>Floor Plan Fill Opacity: </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={floorPlanOpacity}
+                          onChange={(e) =>
+                            setFloorPlanOpacity(parseFloat(e.target.value))
+                          }
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label>Floor Plan Fill Opacity: </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={floorPlanOpacity}
-                        onChange={(e) =>
-                          setFloorPlanOpacity(parseFloat(e.target.value))
-                        }
-                      />
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        gap: "10px",
+                      }}
+                    >
+                      <div>
+                        <label>Room Opacity: </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={roomOpacity}
+                          onChange={(e) =>
+                            setRoomOpacity(parseFloat(e.target.value))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label>Desk Opacity: </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={deskOpacity}
+                          onChange={(e) =>
+                            setDeskOpacity(parseFloat(e.target.value))
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      gap: "10px",
-                    }}
-                  >
-                    <div>
-                      <label>Room Opacity: </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={roomOpacity}
-                        onChange={(e) =>
-                          setRoomOpacity(parseFloat(e.target.value))
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label>Desk Opacity: </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={deskOpacity}
-                        onChange={(e) =>
-                          setDeskOpacity(parseFloat(e.target.value))
-                        }
-                      />
-                    </div>
+                </div>
+                <div
+                  style={{
+                    width: "50%",
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
+                    color: "black",
+                    padding: "5px",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <input
+                      placeholder="Input 1"
+                      style={{
+                        border: "2px solid #ccc",
+                        borderRadius: "5px",
+                        padding: "10px",
+                      }}
+                    />
+                    <select
+                      style={{
+                        border: "2px solid #ccc",
+                        borderRadius: "5px",
+                        padding: "10px",
+                        color: "gray",
+                      }}
+                      onChange={(e) =>
+                        (e.target.options[e.target.selectedIndex].style.color =
+                          "black")
+                      }
+                    >
+                      <option value="">Select an option</option>
+                      <option value="option1">Option 1</option>
+                      <option value="option2">Option 2</option>
+                      <option value="option3">Option 3</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -824,7 +868,6 @@ const FloorPlanBooking = () => {
             <div
               style={{
                 border: "3px solid #a6a4a4",
-
                 backgroundColor: "white",
               }}
             >
@@ -1053,6 +1096,8 @@ const FloorPlanBooking = () => {
             flexDirection: "column",
             flexGrow: 1,
             maxWidth: "550px",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
           <div
@@ -1066,23 +1111,15 @@ const FloorPlanBooking = () => {
               borderRadius: "10px",
             }}
           >
-         
-            <button
-              className={styles.confirmButton}
-              onClick={bookEntity}
-            >
-              Confirm Booking
-            </button>
             <div
               style={{
-                height: "70%",
+                height: "auto",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                backgroundColor: "#e0e0e0", // Added background color
+                padding:'15px'
               }}
             >
-              
               <div className={styles.visualizerContainer}>
                 {tooltip.show && (
                   <div
@@ -1100,13 +1137,37 @@ const FloorPlanBooking = () => {
                     <tr>
                       <th style={{ width: "50px" }}>Desk</th>
                       {updatedDesksFromJSON?.map((deskFake) => (
-                        <th style={selectedDeskConfig?.DeskID == deskFake.deskId ? {backgroundColor:'lightblue'} : {}} key={deskFake.deskName} onClick={() => {
-                          const selectedDesk = desks.find(desk => desk.ID === deskFake.deskId);
-              
-                          setSelectedDesk(selectedDesk);
-                          setSelectedDeskConfig(DeskConfigs.find(config => config.DeskID === deskFake.deskId) || null);
-                        }}>
-                          <div style={{ width: 20, height: 20, padding:'2px',backgroundColor: 'lightgray', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        <th
+                          style={
+                            selectedDeskConfig?.DeskID == deskFake.deskId
+                              ? { backgroundColor: "lightblue" }
+                              : {}
+                          }
+                          key={deskFake.deskName}
+                          onClick={() => {
+                            const selectedDesk = desks.find(
+                              (desk) => desk.ID === deskFake.deskId
+                            );
+
+                            setSelectedDesk(selectedDesk);
+                            setSelectedDeskConfig(
+                              DeskConfigs.find(
+                                (config) => config.DeskID === deskFake.deskId
+                              ) || null
+                            );
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: '100%',
+                              height:'100%',
+                       
+                
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                            }}
+                          >
                             {updatedDesksFromJSON.indexOf(deskFake) + 1}
                           </div>
                         </th>
@@ -1114,121 +1175,149 @@ const FloorPlanBooking = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {updatedDesksFromJSON && TIME_INTERVALS?.map((interval) => (
-                      <tr key={interval}>
-                        <td>{interval}</td>
-                        {updatedDesksFromJSON.map((desk) => {
-                          const slot = desk.availability[interval];
-                        
-                          let status =
-                            desk.availability[interval]?.Status || "available";
-                          
-                          let outcome = selectedCells?.filter(
-                            (cell) => (cell.DeskID === desk.deskId && cell.slot == slot && cell.interval == interval)
-                          )
-                          if (outcome.length > 0){
-                            status= 'selected';
-                          }
-                          return (
-                            <td
-                              key={desk.deskName}
-                              className={`${styles[`statusCell${status}`]} ${
-                                selectedCells?.filter(
-                                  (cell) => cell.DeskID === desk.ID
-                                )
-                                  ? styles.selected
-                                  : ""
-                              }`}
-                              style={selectedDeskConfig?.DeskID == desk.deskId ? {border:'lightblue'} : {}}
-                     
-                              onMouseLeave={handleMouseLeave}
-                              onClick={() =>
-                                handleCellClick(interval, slot, desk)
-                              }
-                            >
-                              {slot?.Status === STATUS.PARTIAL
-                                ? `${slot.SpaceLeft}`
-                                : ""}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
+                    {updatedDesksFromJSON &&
+                      TIME_INTERVALS?.map((interval) => (
+                        <tr key={interval}>
+                          <td>{interval}</td>
+                          {updatedDesksFromJSON.map((desk) => {
+                            const slot = desk.availability[interval];
+
+                            let status =
+                              desk.availability[interval]?.Status ||
+                              "available";
+
+                            let outcome = selectedCells?.filter(
+                              (cell) =>
+                                cell.DeskID === desk.deskId &&
+                                cell.slot == slot &&
+                                cell.interval == interval
+                            );
+                            if (outcome.length > 0) {
+                              status = "selected";
+                            }
+                            return (
+                              <td
+                                key={desk.deskName}
+                                className={`${styles[`statusCell${status}`]} ${
+                                  selectedCells?.filter(
+                                    (cell) => cell.DeskID === desk.ID
+                                  )
+                                    ? styles.selected
+                                    : ""
+                                }`}
+                                style={
+                                  selectedDeskConfig?.DeskID == desk.deskId
+                                    ? { border: "lightblue" }
+                                    : {}
+                                }
+                                onMouseLeave={handleMouseLeave}
+                                onClick={() =>
+                                  handleCellClick(interval, slot, desk)
+                                }
+                              >
+                                {slot?.Status === STATUS.PARTIAL
+                                  ? `${slot.SpaceLeft}`
+                                  : ""}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
                   </tbody>
-                  
                 </table>
-                   
               </div>
-              
             </div>
-            <div
-              style={{
-                height: "30%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: "#f0f0f0", // Added background color
-              }}
-            >
+
+            <div style={{ height: "20%",minHeight:'190px', width: "100%", padding: "15px" }}>
               <div
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
+                  height: "100%", // Take remaining height
+            
                 }}
               >
-                <h2
-                  style={{
-                    color: "var(--text-color)",
-                    textAlign: "center",
-                    fontFamily: "var(--tile-header-text)",
-                    marginBottom: "5px",
-                    marginTop: "5px",
-                  }}
+                <button
+                  className={styles.confirmButton}
+                  style={{ width: "100%",marginBottom:'15px' }}
+                  onClick={bookEntity}
                 >
-                  Floor Plan Availability & Selected Desk
-                </h2>
-                {selectedDesk && DeskConfigs && selectedDeskConfig && (
-                  <div
-                    style={{
-                      padding: "10px",
-                      backgroundColor: "#ffffff", // Added background color
-                      borderRadius: "5px",
-                      marginTop: "10px", // Added margin top for vertical stacking
-                    }}
-                  >
-                    <p>
-                      <strong>Desk Details</strong>
-                    </p>
-                    <p>
-                      <strong>Name:</strong> {selectedDeskConfig.Desk_SpaceName}
-                    </p>
-                    <p>
-                      <strong>Type:</strong> {selectedDeskConfig.Type}
-                    </p>
-                    <p>
-                      <strong>Availability:</strong>{" "}
-                      {calculateAvailability(selectedDeskConfig)}
-                    </p>
-                    <p>
-                      <div>
-                        <strong>Amenities:</strong>
-                        <ul>
-                          {selectedDeskConfig.Amenities.map((amenityId) => (
-                            <li key={amenityId}>
-                              •{" "}
-                              {
-                                AvailableAmenties.find(
-                                  (amenity) => amenity.ID === amenityId
-                                ).Name
-                              }
-                            </li>
-                          ))}
-                        </ul>
+                  Confirm Booking
+                </button>
+                <div>
+                  {selectedDesk && DeskConfigs && selectedDeskConfig && (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        textAlign: "left",
+                      }}
+                    >
+                      <div style={{ Width: "45%" }}>
+                        <p>
+                          <strong>Desk Details</strong>
+                        </p>
+                        <p>
+                          <strong>Name:</strong>{" "}
+                          {selectedDeskConfig.Desk_SpaceName}
+                        </p>
+                        <p>
+                          <strong>Type:</strong> {selectedDeskConfig.Type}
+                        </p>
+                        <p>
+                          <strong>Availability:</strong>{" "}
+                          {calculateAvailability(selectedDeskConfig)}
+                        </p>
                       </div>
-                    </p>
-                  </div>
-                )}
+                      <div style={{ width: "55%" }}>
+                        <p>
+                          <strong>Amenities:</strong>
+                          <div style={{ display: "flex", flexWrap: "wrap" }}>
+                            {selectedDeskConfig.Amenities.length > 3 ? (
+                              <div
+                                style={{ display: "flex", flexWrap: "wrap" }}
+                              >
+                                {selectedDeskConfig.Amenities.map(
+                                  (amenityId) => (
+                                    <div
+                                      key={amenityId}
+                                      style={{ width: "50%" }}
+                                    >
+                                      •{" "}
+                                      {
+                                        AvailableAmenties.find(
+                                          (amenity) => amenity.ID === amenityId
+                                        ).Name
+                                      }
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            ) : (
+                              <div
+                                style={{ display: "flex", flexWrap: "wrap" }}
+                              >
+                                {selectedDeskConfig.Amenities.map(
+                                  (amenityId) => (
+                                    <div
+                                      key={amenityId}
+                                      style={{ width: "100%" }}
+                                    >
+                                      •{" "}
+                                      {
+                                        AvailableAmenties.find(
+                                          (amenity) => amenity.ID === amenityId
+                                        ).Name
+                                      }
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
