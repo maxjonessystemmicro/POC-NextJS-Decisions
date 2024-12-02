@@ -63,6 +63,7 @@ const FloorPlanBooking = () => {
 
   const [DeskConfigs, setDeskConfigs] = useState(null);
   const [Bookings, setBookings] = useState(null);
+  const [TIME_INTERVALS, setTIME_INTERVALS] = useState(null);
 
   const [updatedDesksFromJSON, setupdatedDesksFromJSON] = useState(null);
 
@@ -73,12 +74,6 @@ const FloorPlanBooking = () => {
 
   const stageRef = useRef(null);
   const router = useRouter();
-  // Define the constants for time intervals
-  let TIME_INTERVALS = Array.from({ length: 48 }, (_, index) => {
-    const hours = String(Math.floor(index / 2)).padStart(2, "0");
-    const minutes = index % 2 === 0 ? "00" : "30";
-    return `${hours}:${minutes}`;
-  });
 
   // Define statuses
   const STATUS = {
@@ -87,6 +82,22 @@ const FloorPlanBooking = () => {
     PARTIAL: "partial",
   };
 
+
+
+  
+  const opening = '09:00';
+  const closing = '17:00';
+
+  if(TIME_INTERVALS == null){
+    let TIME_INTERVALSCOPY = Array.from({ length: 48 }, (_, index) => {
+      const hours = String(Math.floor(index / 2)).padStart(2, "0");
+      const minutes = index % 2 === 0 ? "00" : "30";
+      const time = `${hours}:${minutes}`;
+      return time >= opening && time <= closing ? time : null;
+    }).filter(Boolean);
+  
+    setTIME_INTERVALS(TIME_INTERVALSCOPY);
+  }
   //booking availability conversion
 
   function findTimeIntervalIndex(timeString) {
@@ -96,7 +107,7 @@ const FloorPlanBooking = () => {
   function convertToInterval(date) {
     const hours = date.getHours();
     const minutes = date.getMinutes();
-    const intervalIndex = hours * 2 + (minutes >= 30 ? 1 : 0);
+    const intervalIndex = (hours - parseInt(opening.split(':')[0])) * 2 + (minutes >= 30 ? 1 : 0);
     return TIME_INTERVALS[intervalIndex];
   }
 
@@ -109,7 +120,8 @@ const FloorPlanBooking = () => {
 
     const startIdx = findTimeIntervalIndex(startInterval);
     const endIdx = findTimeIntervalIndex(endInterval);
-   
+
+    
     for (let i = startIdx; i <= endIdx; i++) {
       const interval = TIME_INTERVALS[i];
 
@@ -188,14 +200,11 @@ const FloorPlanBooking = () => {
     const Creater_Account_ID = urlParams.get("CAI");
     const Bookings = urlParams.get("Bookings");
     const Configs = urlParams.get("Configs");
+
+
    
-    TIME_INTERVALS = Array.from({ length: 48 }, (_, index) => {
-      const hours = String(Math.floor(index / 2)).padStart(2, "0");
-      const minutes = index % 2 === 0 ? "00" : "30";
-      return `${hours}:${minutes}`;
-    });
-  
     
+
     if(Creater_Account_ID){
       sessionStorage.setItem("CAI", Creater_Account_ID);
     }
@@ -653,7 +662,7 @@ const FloorPlanBooking = () => {
       let filtered = selectedCells.filter((item) => item !== isAlreadySelected[0]);
       setSelectedCells(filtered);
     }else{
-      setSelectedDesk(desk);
+      setSelectedDesk(desks.find(d => d.ID === desk.deskId));
       setSelectedDeskConfig(
         DeskConfigs.find((config) => config.DeskID === desk.deskId) ||
           null
@@ -666,11 +675,7 @@ const FloorPlanBooking = () => {
    
   };
 
-  const handleConfirmBooking = () => {
-   
-
-  
-  };
+ 
 
   return (
     <div
@@ -1061,6 +1066,101 @@ const FloorPlanBooking = () => {
               borderRadius: "10px",
             }}
           >
+         
+            <button
+              className={styles.confirmButton}
+              onClick={bookEntity}
+            >
+              Confirm Booking
+            </button>
+            <div
+              style={{
+                height: "70%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "#e0e0e0", // Added background color
+              }}
+            >
+              
+              <div className={styles.visualizerContainer}>
+                {tooltip.show && (
+                  <div
+                    className={styles.tooltip}
+                    style={{
+                      top: `${tooltip.y}px`,
+                      left: `${tooltip.x}px`,
+                    }}
+                  >
+                    {tooltip.content}
+                  </div>
+                )}
+                <table className={styles.visualizerTable}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "50px" }}>Desk</th>
+                      {updatedDesksFromJSON?.map((deskFake) => (
+                        <th style={selectedDeskConfig?.DeskID == deskFake.deskId ? {backgroundColor:'lightblue'} : {}} key={deskFake.deskName} onClick={() => {
+                          const selectedDesk = desks.find(desk => desk.ID === deskFake.deskId);
+              
+                          setSelectedDesk(selectedDesk);
+                          setSelectedDeskConfig(DeskConfigs.find(config => config.DeskID === deskFake.deskId) || null);
+                        }}>
+                          <div style={{ width: 20, height: 20, padding:'2px',backgroundColor: 'lightgray', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            {updatedDesksFromJSON.indexOf(deskFake) + 1}
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {updatedDesksFromJSON && TIME_INTERVALS?.map((interval) => (
+                      <tr key={interval}>
+                        <td>{interval}</td>
+                        {updatedDesksFromJSON.map((desk) => {
+                          const slot = desk.availability[interval];
+                        
+                          let status =
+                            desk.availability[interval]?.Status || "available";
+                          
+                          let outcome = selectedCells?.filter(
+                            (cell) => (cell.DeskID === desk.deskId && cell.slot == slot && cell.interval == interval)
+                          )
+                          if (outcome.length > 0){
+                            status= 'selected';
+                          }
+                          return (
+                            <td
+                              key={desk.deskName}
+                              className={`${styles[`statusCell${status}`]} ${
+                                selectedCells?.filter(
+                                  (cell) => cell.DeskID === desk.ID
+                                )
+                                  ? styles.selected
+                                  : ""
+                              }`}
+                              style={selectedDeskConfig?.DeskID == desk.deskId ? {border:'lightblue'} : {}}
+                     
+                              onMouseLeave={handleMouseLeave}
+                              onClick={() =>
+                                handleCellClick(interval, slot, desk)
+                              }
+                            >
+                              {slot?.Status === STATUS.PARTIAL
+                                ? `${slot.SpaceLeft}`
+                                : ""}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                  
+                </table>
+                   
+              </div>
+              
+            </div>
             <div
               style={{
                 height: "30%",
@@ -1129,90 +1229,6 @@ const FloorPlanBooking = () => {
                     </p>
                   </div>
                 )}
-              </div>
-            </div>
-            <button
-              className={styles.confirmButton}
-              onClick={bookEntity}
-            >
-              Confirm Booking
-            </button>
-            <div
-              style={{
-                height: "70%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: "#e0e0e0", // Added background color
-              }}
-            >
-              
-              <div className={styles.visualizerContainer}>
-                {tooltip.show && (
-                  <div
-                    className={styles.tooltip}
-                    style={{
-                      top: `${tooltip.y}px`,
-                      left: `${tooltip.x}px`,
-                    }}
-                  >
-                    {tooltip.content}
-                  </div>
-                )}
-                <table className={styles.visualizerTable}>
-                  <thead>
-                    <tr>
-                      <th style={{ width: "50px" }}>Desk</th>
-                      {updatedDesksFromJSON?.map((desk) => (
-                        <th style={selectedDeskConfig?.DeskID == desk.deskId ? {backgroundColor:'lightblue'} : {}} key={desk.deskName}>{desk.deskName}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {updatedDesksFromJSON && TIME_INTERVALS.map((interval) => (
-                      <tr key={interval}>
-                        <td>{interval}</td>
-                        {updatedDesksFromJSON.map((desk) => {
-                          const slot = desk.availability[interval];
-                        
-                          let status =
-                            desk.availability[interval]?.Status || "available";
-                          
-                          let outcome = selectedCells?.filter(
-                            (cell) => (cell.DeskID === desk.deskId && cell.slot == slot && cell.interval == interval)
-                          )
-                          if (outcome.length > 0){
-                            status= 'selected';
-                          }
-                          return (
-                            <td
-                              key={desk.deskName}
-                              className={`${styles[`statusCell${status}`]} ${
-                                selectedCells?.filter(
-                                  (cell) => cell.DeskID === desk.ID
-                                )
-                                  ? styles.selected
-                                  : ""
-                              }`}
-                              style={selectedDeskConfig?.DeskID == desk.deskId ? {border:'lightblue'} : {}}
-                     
-                              onMouseLeave={handleMouseLeave}
-                              onClick={() =>
-                                handleCellClick(interval, slot, desk)
-                              }
-                            >
-                              {slot?.Status === STATUS.PARTIAL
-                                ? `${slot.SpaceLeft}`
-                                : ""}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                  
-                </table>
-                   
               </div>
             </div>
           </div>
