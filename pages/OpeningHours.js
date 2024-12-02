@@ -44,36 +44,53 @@ const TimeDropdowns = ({ onTimeChange }) => {
   });
 
   return (
-    <div>
-      <div>
-        <label htmlFor="openingTime">Opening Time:</label>
-        <select id="openingTime" value={openingTime} onChange={handleOpeningChange}>
-          <option value="">Select Opening Time</option>
-          {allTimes.map((time) => (
-            <option key={time} value={time}>
-              {time}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="closingTime">Closing Time:</label>
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px", margin: "0 auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <label htmlFor="openingTime" style={{ fontWeight: "bold" }}>Opening Time:</label>
         <select
-          id="closingTime"
-          value={closingTime}
-          onChange={handleClosingChange}
-          disabled={!isClosingEnabled}
+        id="openingTime"
+        value={openingTime}
+        onChange={handleOpeningChange}
+        style={{
+            padding: "8px",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+            fontSize: "14px",
+        }}
         >
-          <option value="">Select Closing Time</option>
-          {closingOptions.map((time) => (
+        <option value="">Select Opening Time</option>
+        {allTimes.map((time) => (
             <option key={time} value={time}>
-              {time}
+            {time}
             </option>
-          ))}
+        ))}
         </select>
-      </div>
     </div>
+
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <label htmlFor="closingTime" style={{ fontWeight: "bold" }}>Closing Time:</label>
+        <select
+        id="closingTime"
+        value={closingTime}
+        onChange={handleClosingChange}
+        disabled={!isClosingEnabled}
+        style={{
+            padding: "8px",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+            fontSize: "14px",
+        }}
+        >
+        <option value="">Select Closing Time</option>
+        {closingOptions.map((time) => (
+            <option key={time} value={time}>
+            {time}
+            </option>
+        ))}
+        </select>
+    </div>
+    </div>
+
   );
 };
 
