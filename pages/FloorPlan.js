@@ -1118,6 +1118,20 @@ const SingleFloorPlan = () => {
                 paddingBottom: "0px",
               }}
             >
+            <div>
+              <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>Floor Plan Image Upload</h2>
+              <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{
+                    marginBottom: "20px",
+                    marginTop: "5px",
+                    width: "100%",
+                  }}
+                  disabled={isDrawingRoom || isAddingDesk}
+                />
+            </div>
               <h2 style={{ fontSize: "16px", fontWeight: "bold" }}>Tools</h2>
               <div style={{ margin: "10px 0" }}>
                 <label style={{ color: "white" }}>Image Opacity: </label>
@@ -1178,17 +1192,7 @@ const SingleFloorPlan = () => {
                   onChange={(e) => setDeskOpacity(parseFloat(e.target.value))}
                 />
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{
-                  marginBottom: "20px",
-                  marginTop: "5px",
-                  width: "100%",
-                }}
-                disabled={isDrawingRoom || isAddingDesk}
-              />
+
 
               <button
                 onClick={resetFloorPlan}
