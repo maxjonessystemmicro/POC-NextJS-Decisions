@@ -266,9 +266,7 @@ const RoomDesigner = () => {
         throw new Error(
           `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
         );
-      } else {
-        alert("Desk configuration saved successfully.");
-      }
+      } 
     } catch (error) {
       console.error("Error saving desk configuration:", error);
     }
@@ -318,14 +316,9 @@ const RoomDesigner = () => {
           throw new Error(
             `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
           );
-        } else {
-          alert("Successful!!");
-        }
+        } 
       } catch (error) {
         console.error("Error creating floor plan:", error);
-        alert(
-          "An error occurred while completing the floor plan. Please check the console for more details."
-        );
       }
     }
     if (existingDesks.length > 0) {
@@ -346,14 +339,9 @@ const RoomDesigner = () => {
           throw new Error(
             `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
           );
-        } else {
-          alert("Successful!!");
-        }
+        } 
       } catch (error) {
         console.error("Error creating floor plan:", error);
-        alert(
-          "An error occurred while completing the floor plan. Please check the console for more details."
-        );
       }
     }
   };

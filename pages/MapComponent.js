@@ -631,7 +631,6 @@ const FloorPlanBooking = () => {
     sessionStorage.removeItem("IsComplete");
     sessionStorage.removeItem("rooms");
     sessionStorage.removeItem("desks");
-    // alert("Floor plan data cleared!");
   };
 
   // Scale the image to fit within the plot dimensions
