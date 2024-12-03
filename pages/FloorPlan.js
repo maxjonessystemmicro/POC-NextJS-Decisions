@@ -72,8 +72,11 @@ const SingleFloorPlan = () => {
   const stageRef = useRef(null);
   const router = useRouter();
 
-  const [openingTime, setOpeningTime] = useState('');
-  const [closingTime, setClosingTime] = useState('');
+  const [openingTime, setOpeningTime] = useState(null); // 12:00 PM
+  const [closingTime, setClosingTime] = useState(null);
+
+  const [rawopeningTime, setrawOpeningTime] = useState(null); // long date
+  const [rawclosingTime, setrawClosingTime] = useState(null); 
 
   // Handler to update time data
   const handleTimeChange = (times) => {
@@ -131,7 +134,8 @@ const SingleFloorPlan = () => {
         setPlotWidth(parsedFloorPlan.Grid_Width);
         setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
         setCreater_Account_ID(Creater_Account_ID);
-
+        setrawOpeningTime(parsedFloorPlan.Opening_Time);
+        setrawClosingTime(parsedFloorPlan.Closing_Time);
 
         if (parsedRooms) {
           parsedRooms.forEach((room, index) => {
@@ -173,8 +177,8 @@ const SingleFloorPlan = () => {
         sessionStorage.setItem("GridWidth", plotWidth);
         sessionStorage.setItem("rooms", JSON.stringify(parsedRooms));
         sessionStorage.setItem("desks", JSON.stringify(parsedDesks));
-        sessionStorage.setItem("openingTime", JSON.stringify(openingTime))
-        sessionStorage.setItem("closingTime", JSON.stringify(closingTime))
+        sessionStorage.setItem("openingTime", JSON.stringify(parsedFloorPlan.Opening_Time))
+        sessionStorage.setItem("closingTime", JSON.stringify(parsedFloorPlan.Closing_Time))
         
         sessionStorage.setItem("CAI",Creater_Account_ID);
         //set the url
@@ -212,6 +216,8 @@ const SingleFloorPlan = () => {
       setOpeningTime(openingTime);
       setClosingTime(closingTime);
       setCreater_Account_ID(Creater_Account_ID);
+      setrawOpeningTime(openingTime);
+      setrawClosingTime(closingTime);
 
       if (rooms) {
         rooms.forEach((room, index) => {
@@ -258,7 +264,7 @@ const SingleFloorPlan = () => {
   // Complete the floor plan and send data to the server
   const completeFloor = async () => {
     if (desks && floorName) {
-
+      console.log("log",openingTime,closingTime);
       try {
         const response = await fetch(
           type === "complete" ? "/api/newFloorPlan" : "/api/editAPI",
@@ -280,6 +286,8 @@ const SingleFloorPlan = () => {
                 Grid_Height: plotHeight,
                 Grid_Width: plotWidth,
                 FloorPlan_Image_Position: imagePosition,
+                Opening_Time: openingTime,
+                Closing_Time: closingTime
               },
               Rooms: rooms,
             }),
@@ -1260,7 +1268,8 @@ const SingleFloorPlan = () => {
                 ↓
               </button>
               <div>
-             <TimeDropdowns onTimeChange={handleTimeChange}/>
+             {rawopeningTime && <TimeDropdowns Opening_Time={rawopeningTime} Closing_Time={rawclosingTime} onTimeChange={handleTimeChange}/>}
+             {!rawopeningTime && <TimeDropdowns onTimeChange={handleTimeChange}/>}
               </div>
             </div>
 

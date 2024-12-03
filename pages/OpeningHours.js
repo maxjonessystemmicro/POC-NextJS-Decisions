@@ -1,10 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import { format, addMinutes, startOfDay, parse, isAfter } from 'date-fns';
 
-const TimeDropdowns = ({ onTimeChange }) => {
-  const [openingTime, setOpeningTime] = useState('');
-  const [closingTime, setClosingTime] = useState('');
+const TimeDropdowns = ({ onTimeChange, Opening_Time, Closing_Time}) => {
+  const [openingTime, setOpeningTime] = useState(null);
+  const [closingTime, setClosingTime] = useState(null);
   const [isClosingEnabled, setIsClosingEnabled] = useState(false);
+
+
+  
+  useEffect(() => {
+    console.log("1",Opening_Time);
+    if(Opening_Time != null){
+      console.log("2",Opening_Time);
+      setOpeningTime(format(new Date(Opening_Time), 'hh:mm a'));
+      setClosingTime(format(new Date(Closing_Time), 'hh:mm a'));
+      setIsClosingEnabled(true);
+    }
+
+
+   }, []);
 
   // Helper function to generate time slots
   const generateTimes = () => {
