@@ -95,7 +95,7 @@ const SingleFloorPlan = () => {
       const urlParams = new URLSearchParams(window.location.search);
      
       const Creater_Account_ID = urlParams.get("CAI");
-      setCreater_Account_ID(Creater_Account_ID);
+      setCreater_Account_ID(Creater_Account_ID ? Creater_Account_ID : null);
       setType("complete");
     }
 
@@ -263,8 +263,7 @@ const SingleFloorPlan = () => {
 
   // Complete the floor plan and send data to the server
   const completeFloor = async () => {
-    if (desks && floorName) {
-      console.log("log",openingTime,closingTime);
+    if (desks && floorName && Creater_Account_ID) {
       try {
         const response = await fetch(
           type === "complete" ? "/api/newFloorPlan" : "/api/editAPI",

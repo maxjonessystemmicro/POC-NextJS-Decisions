@@ -78,9 +78,13 @@
   border-radius: 5px;
   cursor: pointer;
 }
-
-.confirmButton:hover {
-  background-color: darkgreen;
+.confirmButton:disabled {
+  background-color: grey;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: not-allowed;
 }
 
 /* Added to keep thead at the top */

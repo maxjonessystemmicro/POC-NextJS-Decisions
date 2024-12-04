@@ -239,39 +239,42 @@ const RoomDesigner = () => {
   };
 
   const saveDeskConfig = async () => {
-    try {
+    if(Creater_Account_ID){
+      try {
 
-      const selectedAmenitiesIDs = SelectedAmenities.map(amenity => amenity.ID);
-      console.log("selected",selectedAmenitiesIDs);
-
-      const response = await fetch(`/api/saveDeskConfig`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          DeskID: selectedDesk.ID,
-          Desk_SpaceName: deskName,
-          Type: deskType,
-          Capacity: deskCapacity,
-          FloorPlanID: floorPlan.ID,
-          RoomID: selectedRoom.ID,
-          Amenities: selectedAmenitiesIDs
-        }),
-      });
-
-      const responseText = await response.text();
-
-      if (!response.ok) {
-        throw new Error(
-          `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
-        );
-      } else {
-        alert("Desk configuration saved successfully.");
+        const selectedAmenitiesIDs = SelectedAmenities.map(amenity => amenity.ID);
+    
+  
+        const response = await fetch(`/api/saveDeskConfig`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            DeskID: selectedDesk.ID,
+            Desk_SpaceName: deskName,
+            Type: deskType,
+            Capacity: deskCapacity,
+            FloorPlanID: floorPlan.ID,
+            RoomID: selectedRoom.ID,
+            Amenities: selectedAmenitiesIDs
+          }),
+        });
+  
+        const responseText = await response.text();
+     
+        if (!response.ok) {
+          throw new Error(
+            `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
+          );
+        } else {
+         
+        }
+      } catch (error) {
+        console.error("Error saving desk configuration:", error);
       }
-    } catch (error) {
-      console.error("Error saving desk configuration:", error);
     }
+   
   };
 
   const handleDeskNameChange = (e) => {
@@ -287,6 +290,7 @@ const RoomDesigner = () => {
   };
 
   const saveDesks = async () => {
+
     //using the offset update the desk vertices
     let alignedDesks = desks.map((desk) => ({
       ...desk,
@@ -300,34 +304,6 @@ const RoomDesigner = () => {
     let newDesks = alignedDesks.filter((desk) => desk.id === null);
     let existingDesks = alignedDesks.filter((desk) => desk.id !== null);
 
-    if (newDesks.length > 0) {
-      try {
-        const response = await fetch("/api/NewDeskAPI", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            Desks: newDesks,
-          }),
-        });
-
-        const responseText = await response.text();
-
-        if (!response.ok) {
-          throw new Error(
-            `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
-          );
-        } else {
-          alert("Successful!!");
-        }
-      } catch (error) {
-        console.error("Error creating floor plan:", error);
-        alert(
-          "An error occurred while completing the floor plan. Please check the console for more details."
-        );
-      }
-    }
     if (existingDesks.length > 0) {
       try {
         const response = await fetch("/api/editDesksAPI", {
@@ -342,13 +318,35 @@ const RoomDesigner = () => {
 
         const responseText = await response.text();
 
-        if (!response.ok) {
-          throw new Error(
-            `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
-          );
-        } else {
-          alert("Successful!!");
+       
+      } catch (error) {
+        console.error("Error creating floor plan:", error);
+        backButton();
+        
+       
+      }
+      
+    }
+    if (newDesks.length > 0) {
+      try {
+        const response = await fetch("/api/NewDeskAPI", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            Desks: newDesks,
+          }),
+        });
+
+        const responseText = await response.text();
+
+        const deskConfigurations = JSON.parse(responseText);
+        if(deskConfigurations.Done.AllDesks){
+          setDesks(deskConfigurations.Done.AllDesks);
+          sessionStorage.setItem("desks", JSON.stringify(deskConfigurations.Done.AllDesks));
         }
+      
       } catch (error) {
         console.error("Error creating floor plan:", error);
         alert(
@@ -356,6 +354,8 @@ const RoomDesigner = () => {
         );
       }
     }
+
+      backButton();
   };
 
   // Snap a value to the nearest grid point
@@ -364,14 +364,7 @@ const RoomDesigner = () => {
 
   // Navigate back to the previous page
   const backButton = async () => {
-    let alignedDesks = desks.map((desk) => ({
-      ...desk,
-      Vertices: desk.Vertices.map((v) => ({
-        x: v.x - offsetX,
-        y: v.y - offsetY,
-      })),
-    }));
-    sessionStorage.setItem("desks", JSON.stringify(alignedDesks));
+
     window.history.back();
   };
 
@@ -533,13 +526,16 @@ const RoomDesigner = () => {
   // Handle the start of desk dragging
   const handleDeskDragStart = (e) => {
     if (selectedDesk) {
-      const stage = e.target.getStage();
-      const mousePos = stage.getPointerPosition();
-      setIsDraggingDesk(true);
-      setDeskOffset({
-        x: mousePos.x - selectedDesk.Vertices[0].x,
-        y: mousePos.y - selectedDesk.Vertices[0].y,
-      });
+  
+        const stage = e.target.getStage();
+        const mousePos = stage.getPointerPosition();
+        setIsDraggingDesk(true);
+        setDeskOffset({
+          x: mousePos.x - selectedDesk.Vertices[0].x,
+          y: mousePos.y - selectedDesk.Vertices[0].y,
+        });
+      
+      
     }
   };
 
