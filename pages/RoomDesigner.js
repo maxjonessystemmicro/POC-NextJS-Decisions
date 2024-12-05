@@ -124,7 +124,7 @@ const RoomDesigner = () => {
         })),
       };
 
-      setFloorPlan(JSON.parse(sessionStorage.getItem("FloorPlan")));
+      //setFloorPlan(JSON.parse(sessionStorage.getItem("FloorPlan")));
       setPlotHeight(plotHeight);
       setPlotWidth(plotWidth);
       setSelectedRoom(centeredRoom);
@@ -153,6 +153,7 @@ const RoomDesigner = () => {
             })),
           }));
 
+          console.log("setDesks call :  centered desks", centeredDesks)
           setDesks(centeredDesks);
           const newDeskColors = {};
           centeredDesks.forEach((desk) => {
@@ -352,6 +353,7 @@ const RoomDesigner = () => {
 
   // Navigate back to the previous page
   const backButton = async () => {
+    console.log("number of desks: ",desks.length)
     let alignedDesks = desks.map((desk) => ({
       ...desk,
       Vertices: desk.Vertices.map((v) => ({
@@ -359,7 +361,22 @@ const RoomDesigner = () => {
         y: v.y - offsetY,
       })),
     }));
-    sessionStorage.setItem("desks", JSON.stringify(alignedDesks));
+    let originalDesks = JSON.parse(sessionStorage.getItem("desks"));
+    console.log("session storage desks", originalDesks);
+    if (originalDesks) {
+      // Replace the updated desks in the original array
+      let updatedDesks = originalDesks.map((desk) => {
+        // Check if there's an updated version of the desk in alignedDesks
+        let updatedDesk = alignedDesks.find((alignedDesk) => alignedDesk.ID === desk.ID);
+
+        // If there's an updated version, use it; otherwise, keep the original
+        return updatedDesk ? updatedDesk : desk;
+      });
+
+      console.log("setDesks call: updated desks", updatedDesks);
+      sessionStorage.setItem("desks", JSON.stringify(updatedDesks));
+    }
+    
     window.history.back();
   };
 
