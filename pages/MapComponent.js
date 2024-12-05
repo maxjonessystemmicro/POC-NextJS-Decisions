@@ -594,7 +594,7 @@ const FloorPlanBooking = () => {
         if (OLDJson == null) {
           console.log("1");
           setOLDJson(updatedDesksFromJSON);
-       
+
           let filteredDesks = updatedDesksFromJSON?.filter(
             (fakeDesk) =>
               desks.find((desk) => desk.ID === fakeDesk.deskId).Room_ID ==
@@ -1056,284 +1056,244 @@ const FloorPlanBooking = () => {
             </div>
           </div>
         </div>
-        <div style={{ width: "25vw" }}>
+        <div style={{ width: "22vw" }}>
           <div
             style={{
-              border: "3px solid black",
-              backgroundColor: "white",
+              height: "100%",
               width: "100%",
 
-              padding: "15px",
-              height: "100%",
               display: "flex",
+              gap: "15px",
               flexDirection: "column",
-              flexGrow: 1,
-
-              justifyContent: "center",
-              alignItems: "center",
             }}
           >
+            <div style={{ height: "200px" }}>
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: "white",
+                  padding: "15px",
+                  borderRadius: "15px",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <h2 style={{ fontWeight: "bolder" }}>Current Bookings</h2>
+                <ul style={{ flexGrow: 1, overflowY: "scroll" }}>
+                  {Bookings?.sort(
+                    (a, b) => new Date(a.StartTime) - new Date(b.StartTime)
+                  ).map((booking) => {
+                    const deskSpaceName =
+                      DeskConfigs.find(
+                        (config) => config.DeskID === booking.DeskID
+                      )?.Desk_SpaceName || "Unknown";
+                    const isHighlighted =
+                      booking.AccountID === Creater_Account_ID;
+                    return (
+                      <li
+                        key={booking.ID}
+                        style={{
+                          fontWeight: isHighlighted ? "none" : "none",
+                        }}
+                      >
+                        {deskSpaceName} -{" "}
+                        {new Date(booking.StartTime)
+                          .getHours()
+                          .toString()
+                          .padStart(2, "0") +
+                          ":" +
+                          new Date(booking.StartTime)
+                            .getMinutes()
+                            .toString()
+                            .padStart(2, "0")}{" "}
+                        -{" "}
+                        {new Date(
+                          new Date(booking.EndTime).setMinutes(
+                            new Date(booking.EndTime).getMinutes() + 30
+                          )
+                        )
+                          .getHours()
+                          .toString()
+                          .padStart(2, "0") +
+                          ":" +
+                          new Date(
+                            new Date(booking.EndTime).setMinutes(
+                              new Date(booking.EndTime).getMinutes() + 30
+                            )
+                          )
+                            .getMinutes()
+                            .toString()
+                            .padStart(2, "0")}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+            <div
+              className={styles.visualizerContainer}
+              style={{ flexGrow: "1" }}
+            >
+              <table className={styles.visualizerTable}>
+                <thead>
+                  <tr>
+                    <th style={{ width: "50px" }}>Desk</th>
+                    {updatedDesksFromJSON?.map((deskFake, index) => (
+                      <th
+                        style={
+                          selectedDeskConfig?.DeskID === deskFake.deskId
+                            ? { backgroundColor: "lightblue" }
+                            : {}
+                        }
+                        key={deskFake.deskId}
+                        onClick={() => {
+                          const selectedDesk = desks.find(
+                            (desk) => desk.ID === deskFake.deskId
+                          );
+
+                          setSelectedDesk(selectedDesk);
+                          setSelectedDeskConfig(
+                            DeskConfigs.find(
+                              (config) => config.DeskID === deskFake.deskId
+                            ) || null
+                          );
+                        }}
+                      >
+                        {index + 1}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {updatedDesksFromJSON &&
+                    TIME_INTERVALS?.map((interval) => (
+                      <tr key={interval}>
+                        <td>{interval}</td>
+                        {updatedDesksFromJSON.map((desk) => {
+                          const slot = desk.availability[interval];
+
+                          let status =
+                            desk.availability[interval]?.Status || "available";
+
+                          let outcome = selectedCells?.filter(
+                            (cell) =>
+                              cell.DeskID === desk.deskId &&
+                              cell.slot === slot &&
+                              cell.interval === interval
+                          );
+                          if (outcome.length > 0) {
+                            status = "selected";
+                          }
+                          return (
+                            <td
+                              key={`${desk.deskId}-${interval}`}
+                              className={`${styles[`statusCell${status}`]} ${
+                                selectedCells?.filter(
+                                  (cell) => cell.DeskID === desk.deskId
+                                )
+                                  ? styles.selected
+                                  : ""
+                              }`}
+                              style={
+                                selectedDeskConfig?.DeskID === desk.deskId
+                                  ? { opacity: 0.75 }
+                                  : {}
+                              }
+                              onMouseLeave={handleMouseLeave}
+                              onClick={() =>
+                                handleCellClick(interval, slot, desk)
+                              }
+                            >
+                              {slot?.Status === STATUS.PARTIAL
+                                ? `${slot.SpaceLeft}`
+                                : ""}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                width: "100%",
-                height: "100%",
+                backgroundColor: "white",
+                height: "175px",
+                padding: "15px",
+                borderRadius: "15px",
               }}
             >
               <div
                 style={{
-                  height: "225px",
-
                   display: "flex",
                   justifyContent: "space-between",
-                  gap: "15px",
+                  textAlign: "left",
                 }}
               >
-                <div
-                  style={{
-                    width: "50%",
-                    height: "100%",
-                    backgroundColor: "#d3d3d3",
-                    padding: "15px",
-                    borderRadius: "15px",
-                  }}
-                >
-                  <h2 style={{ fontWeight: "bolder" }}>Current Bookings</h2>
-                  <ul style={{ height: "175px", overflowY: "scroll" }}>
-                    {Bookings?.sort(
-                      (a, b) => new Date(a.StartTime) - new Date(b.StartTime)
-                    ).map((booking) => {
-                      const deskSpaceName =
-                        DeskConfigs.find(
-                          (config) => config.DeskID === booking.DeskID
-                        )?.Desk_SpaceName || "Unknown";
-                      const isHighlighted =
-                        booking.AccountID === Creater_Account_ID;
-                      return (
-                        <li
-                          key={booking.ID}
+                <div style={{ Width: "50%" }}>
+                  <p>
+                    <strong>Desk Details</strong>
+                  </p>
+                  <p>
+                    <strong>Name:</strong>{" "}
+                    {selectedDeskConfig?.Desk_SpaceName
+                      ? selectedDeskConfig.Desk_SpaceName
+                      : ""}
+                  </p>
+                  <p>
+                    <strong>Type:</strong>{" "}
+                    {selectedDeskConfig?.Type ? selectedDeskConfig.Type : ""}
+                  </p>
+                  <p>
+                    <strong>Capacity:</strong>{" "}
+                    {selectedDeskConfig?.Capacity
+                      ? selectedDeskConfig.Capacity
+                      : ""}
+                  </p>
+                </div>
+                {AvailableAmenties && (
+                  <div style={{ width: "50%" }}>
+                    <p>
+                      <strong>Amenities:</strong>
+                      <div style={{ display: "flex", flexWrap: "wrap" }}>
+                        <div
                           style={{
-                            fontWeight: isHighlighted ? "none" : "none",
+                            display: "flex",
+                            flexWrap: "wrap",
                           }}
                         >
-                          {deskSpaceName} -{" "}
-                          {new Date(booking.StartTime).getHours().toString().padStart(2, '0') + ":" + new Date(booking.StartTime).getMinutes().toString().padStart(2, '0')} -{" "}
-                          {new Date(new Date(booking.EndTime).setMinutes(new Date(booking.EndTime).getMinutes() + 30)).getHours().toString().padStart(2, '0') + ":" + new Date(new Date(booking.EndTime).setMinutes(new Date(booking.EndTime).getMinutes() + 30)).getMinutes().toString().padStart(2, '0')}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-                <div
-                  style={{
-                    width: "50%",
-                    backgroundColor: "#d3d3d3",
-                    height: "100%",
-                    padding: "15px",
-                    borderRadius: "15px",
-                  }}
-                >
-                  hi
-                </div>
-              </div>
-              <div
-                style={{
-                  flex: 1,
-                  height: "100%",
-                  backgroundColor: "#d3d3d3",
-                  borderRadius: "15px",
-                  marginTop: "15px",
-                }}
-              >
-                <div
-                  style={{
-                    height: "auto",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: "15px",
-                  }}
-                >
-                  <div className={styles.visualizerContainer}>
-                    <table className={styles.visualizerTable}>
-                      <thead>
-                        <tr>
-                          <th style={{ width: "50px" }}>Desk</th>
-                          {updatedDesksFromJSON?.map((deskFake, index) => (
-                            <th
-                              style={
-                                selectedDeskConfig?.DeskID === deskFake.deskId
-                                  ? { backgroundColor: "lightblue" }
-                                  : {}
-                              }
-                              key={deskFake.deskId}
-                              onClick={() => {
-                                const selectedDesk = desks.find(
-                                  (desk) => desk.ID === deskFake.deskId
-                                );
-
-                                setSelectedDesk(selectedDesk);
-                                setSelectedDeskConfig(
-                                  DeskConfigs.find(
-                                    (config) =>
-                                      config.DeskID === deskFake.deskId
-                                  ) || null
-                                );
-                              }}
-                            >
-                              {index + 1}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {updatedDesksFromJSON &&
-                          TIME_INTERVALS?.map((interval) => (
-                            <tr key={interval}>
-                              <td>{interval}</td>
-                              {updatedDesksFromJSON.map((desk) => {
-                                const slot = desk.availability[interval];
-
-                                let status =
-                                  desk.availability[interval]?.Status ||
-                                  "available";
-
-                                let outcome = selectedCells?.filter(
-                                  (cell) =>
-                                    cell.DeskID === desk.deskId &&
-                                    cell.slot === slot &&
-                                    cell.interval === interval
-                                );
-                                if (outcome.length > 0) {
-                                  status = "selected";
-                                }
-                                return (
-                                  <td
-                                    key={`${desk.deskId}-${interval}`}
-                                    className={`${
-                                      styles[`statusCell${status}`]
-                                    } ${
-                                      selectedCells?.filter(
-                                        (cell) => cell.DeskID === desk.deskId
-                                      )
-                                        ? styles.selected
-                                        : ""
-                                    }`}
-                                    style={
-                                      selectedDeskConfig?.DeskID === desk.deskId
-                                        ? { opacity: 0.75 }
-                                        : {}
-                                    }
-                                    onMouseLeave={handleMouseLeave}
-                                    onClick={() =>
-                                      handleCellClick(interval, slot, desk)
-                                    }
-                                  >
-                                    {slot?.Status === STATUS.PARTIAL
-                                      ? `${slot.SpaceLeft}`
-                                      : ""}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    flex:'1',
-   
-                    width: "100%",
-                    padding: "15px",
-                    paddingTop:'0px',
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div style={{ height: "100%" }}>
-                    { (
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          textAlign: "left",
-                        }}
-                      >
-                        <div style={{ Width: "50%" }}>
-                          <p>
-                            <strong>Desk Details</strong>
-                          </p>
-                          <p>
-                            <strong>Name:</strong>{" "}
-                            {selectedDeskConfig?.Desk_SpaceName ? selectedDeskConfig.Desk_SpaceName : "N/A"}
-                          </p>
-                          <p>
-                            <strong>Type:</strong> {selectedDeskConfig?.Type ? selectedDeskConfig.Type : "N/A"}
-                          </p>
-                          <p>
-                            <strong>Capacity:</strong>{" "}
-                            {selectedDeskConfig?.Capacity ? selectedDeskConfig.Capacity : "N/A"}
-                          </p>
-                        </div>
-                        {false &&<div style={{ width: "50%" }}>
-                          <p>
-                            <strong>Amenities:</strong>
-                            <div
-                              style={{ display: "flex", flexWrap: "wrap" }}
-                            >
-                              
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    flexWrap: "wrap",
-                                  }}
-                                >
-                                  {selectedDeskConfig?.Amenities.map(
-                                    (amenityId) => (
-                                      <div
-                                        key={amenityId}
-                                        style={{ width: "100%" }}
-                                      >
-                                        •{" "}
-                                        {
-                                          AvailableAmenties?.find(
-                                            (amenity) =>
-                                              amenity.ID === amenityId
-                                          ).Name ? AvailableAmenties.find(
-                                            (amenity) =>
-                                              amenity.ID === amenityId
-                                          ).Name : "N/A"
-                                        }
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                             
+                          {selectedDeskConfig?.Amenities.map((amenityId) => (
+                            <div key={amenityId} style={{ width: "100%" }}>
+                              •{" "}
+                              {AvailableAmenties?.find(
+                                (amenity) => amenity.ID === amenityId
+                              ).Name
+                                ? AvailableAmenties.find(
+                                    (amenity) => amenity.ID === amenityId
+                                  ).Name
+                                : "N/A"}
                             </div>
-                          </p>
-                        </div>}
+                          ))}
+                        </div>
                       </div>
-                    )}
+                    </p>
                   </div>
-                  <button
-                    className={styles.confirmButton}
-                    style={{ width: "100%" }}
-                    onClick={bookEntity}
-                    disabled={
-                      !selectedCells.every(
-                        (cell) => cell.DeskID === selectedCells[0].DeskID
-                      )
-                    }
-                  >
-                    Confirm Booking
-                  </button>
-                </div>
+                )}
               </div>
+
+              <button
+                className={styles.confirmButton}
+                style={{ width: "100%" }}
+                onClick={bookEntity}
+                disabled={
+                  !selectedCells.every(
+                    (cell) => cell.DeskID === selectedCells[0].DeskID
+                  )
+                }
+              >
+                Confirm Booking
+              </button>
             </div>
           </div>
         </div>

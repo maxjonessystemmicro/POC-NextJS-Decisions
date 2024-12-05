@@ -1,6 +1,6 @@
 .deskBookingVisualizer table {
   border-collapse: collapse;
-  table-layout: fixed;
+
 }
 
 .deskBookingVisualizer td {
@@ -17,13 +17,16 @@
 
 .visualizerContainer {
   background-color: white;
-  overflow-y: scroll;
-  width: 100%;
-  max-height: 625px;
+  display: flex;
+  flex-direction: column; /* Or column depending on your layout */
+  overflow-y: auto;
+  
+  height: 10%; /* Ensure the container takes the full height */
 }
 
 .visualizerTable {
   width: 100%;
+  overflow-y: scroll;
 
   border-collapse: collapse;
 }
