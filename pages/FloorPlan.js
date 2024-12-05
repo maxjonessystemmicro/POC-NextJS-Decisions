@@ -11,7 +11,7 @@ import {
   Rect,
 } from "react-konva";
 import TimeDropdowns from "./OpeningHours";
-import DoubleSidedArrow from './DoubleSidedArrow';
+
 
 // Dynamically import Konva components to avoid server-side rendering issues
 const DynamicStage = dynamic(
@@ -641,7 +641,7 @@ const SingleFloorPlan = () => {
       sessionStorage.setItem("CAI", Creater_Account_ID);
       sessionStorage.setItem("rooms", JSON.stringify(rooms));
       sessionStorage.setItem("desks", JSON.stringify(desks));
-
+asd
       router.push("/RoomDesigner");
     } else if (selectedDesk) {
       const deskRoom = rooms.find(

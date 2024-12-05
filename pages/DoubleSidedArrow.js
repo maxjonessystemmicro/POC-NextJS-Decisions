@@ -31,11 +31,10 @@ const DoubleSidedArrow = ({ start, end, label, style }) => {
 
   return (
     <>
-      {/* Arrow */}
+      {/* Arrow 
       <div style={arrowStyle}></div>
 
-      {/* Label */}
-      {label && <div style={labelStyle}>{label}</div>}
+      {label && <div style={labelStyle}>{label}</div>}*/}
     </>
   );
 };
