@@ -53,6 +53,8 @@ const FloorPlanBooking = () => {
   const [currentDesk, setCurrentDesk] = useState([]);
   const [desks, setDesks] = useState([]);
   const [type, setType] = useState(null);
+  const [selectedOpenInterval, setselectedOpenInterval] = useState(null);
+  const [selectedCloseInterval, setselectedCloseInterval] = useState(null);
 
   const [selectedDesk, setSelectedDesk] = useState(null);
   const [selectedDeskConfig, setSelectedDeskConfig] = useState(null);
@@ -60,7 +62,7 @@ const FloorPlanBooking = () => {
   const [isDraggingDesk, setIsDraggingDesk] = useState(false);
   const [deskOffset, setDeskOffset] = useState({ x: 0, y: 0 });
   const [tempDeskPosition, setTempDeskPosition] = useState(null);
-  
+
   const [OLDJson, setOLDJson] = useState(null);
   const [EligibleCreate, setEligibleCreate] = useState(true);
   const [DeskConfigs, setDeskConfigs] = useState(null);
@@ -191,258 +193,247 @@ const FloorPlanBooking = () => {
 
   // using sample data to generate the schedule
 
-  const SetupData = async () => { 
+  const SetupData = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const FloorPlans = urlParams.get("FloorPlan");
+    const Rooms = urlParams.get("Rooms");
+    const Desks = urlParams.get("Desks");
+    const Creater_Account_ID = urlParams.get("CAI");
+    const Bookings = urlParams.get("Bookings");
+    const Configs = urlParams.get("Configs");
 
-  
-      const urlParams = new URLSearchParams(window.location.search);
-      const FloorPlans = urlParams.get("FloorPlan");
-      const Rooms = urlParams.get("Rooms");
-      const Desks = urlParams.get("Desks");
-      const Creater_Account_ID = urlParams.get("CAI");
-      const Bookings = urlParams.get("Bookings");
-      const Configs = urlParams.get("Configs");
-    
-      if (Creater_Account_ID) {
-        sessionStorage.setItem("CAI", Creater_Account_ID);
-      }
-  
-      if (FloorPlans) {
-        try {
-          const parsedFloorPlan = JSON.parse(FloorPlans);
-          const parsedRooms = JSON.parse(Rooms);
-          const parsedDesks = JSON.parse(Desks);
-         
-          let openingTime = parsedFloorPlan.Opening_Time.split("T")[1].slice(
-            0,
-            5
-          );
-          let closingTime = parsedFloorPlan.Closing_Time.split("T")[1].slice(
-            0,
-            5
-          );
-  
-          setOpening_Time(openingTime);
-          setClosing_Time(closingTime);
-  
-          let TIME_INTERVALSCOPY = Array.from({ length: 48 }, (_, index) => {
-            const hours = String(Math.floor(index / 2)).padStart(2, "0");
-            const minutes = index % 2 === 0 ? "00" : "30";
-            const time = `${hours}:${minutes}`;
-            return time >= openingTime && time <= closingTime ? time : null;
-          }).filter(Boolean);
-  
-          setTIME_INTERVALS(TIME_INTERVALSCOPY);
+    if (Creater_Account_ID) {
+      sessionStorage.setItem("CAI", Creater_Account_ID);
+    }
 
-          const fetchConfigurations = async (
-            floorPlan,
-            openingTime,
-            closingTime,
-            TIME_INTERVALS
-          ) => {
-            if (floorPlan && TIME_INTERVALS) {
-              try {
-                const response = await fetch(
-                  `/api/fetchAvailableConfigs?FloorPlanID=${floorPlan.ID}`,
-                  {
-                    method: "GET",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                  }
+    if (FloorPlans) {
+      try {
+        const parsedFloorPlan = JSON.parse(FloorPlans);
+        const parsedRooms = JSON.parse(Rooms);
+        const parsedDesks = JSON.parse(Desks);
+
+        let openingTime = parsedFloorPlan.Opening_Time.split("T")[1].slice(
+          0,
+          5
+        );
+        let closingTime = parsedFloorPlan.Closing_Time.split("T")[1].slice(
+          0,
+          5
+        );
+
+        setOpening_Time(openingTime);
+        setClosing_Time(closingTime);
+
+        let TIME_INTERVALSCOPY = Array.from({ length: 48 }, (_, index) => {
+          const hours = String(Math.floor(index / 2)).padStart(2, "0");
+          const minutes = index % 2 === 0 ? "00" : "30";
+          const time = `${hours}:${minutes}`;
+          return time >= openingTime && time <= closingTime ? time : null;
+        }).filter(Boolean);
+
+        setTIME_INTERVALS(TIME_INTERVALSCOPY);
+
+        const fetchConfigurations = async (
+          floorPlan,
+          openingTime,
+          closingTime,
+          TIME_INTERVALS
+        ) => {
+          if (floorPlan && TIME_INTERVALS) {
+            try {
+              const response = await fetch(
+                `/api/fetchAvailableConfigs?FloorPlanID=${floorPlan.ID}`,
+                {
+                  method: "GET",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+
+              const responseText = await response.text();
+
+              if (!response.ok) {
+                throw new Error(
+                  `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
                 );
-  
-                const responseText = await response.text();
-  
-                if (!response.ok) {
-                  throw new Error(
-                    `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
-                  );
-                } else {
-           
-                  const deskConfigurations = JSON.parse(responseText);
-                  if (deskConfigurations.Done.Configs) {
-                    let tempDeskConfigs = deskConfigurations.Done.Configs.map(
-                      (config) => {
-                        let existingBooking = null;
-                        if (deskConfigurations.Done.ExistingBookings) {
-                          existingBooking =
-                            deskConfigurations.Done.ExistingBookings.find(
-                              (booking) => booking.DeskSpaceEntityID === config.ID
-                            );
-                        }
-  
-                        return existingBooking
-                          ? { ...config, ExistingBookings: [existingBooking] }
-                          : config;
-                      }
-                    );
-                    setDeskConfigs(tempDeskConfigs);
-                    setBookings(deskConfigurations.Done.ExistingBookings);
-  
-                    let tempDeskConfigsNew = parseDeskData(
-                      deskConfigurations.Done.Configs,
-                      TIME_INTERVALS
-                    );
-            
-                  
-                      let updatedDesksFromJSON = updateDeskAvailability(
-                        tempDeskConfigsNew,
-                        deskConfigurations.Done.ExistingBookings
-                          ? deskConfigurations.Done.ExistingBookings
-                          : [],
-                        openingTime,
-                        TIME_INTERVALS
-                      );
-                     
-                      setupdatedDesksFromJSON(updatedDesksFromJSON);
-                    
-  
-                    if (deskConfigurations.Done.ExistingBookings) {
-                      parsedDesks.forEach((desk) => {
-                        const booking =
+              } else {
+                const deskConfigurations = JSON.parse(responseText);
+                if (deskConfigurations.Done.Configs) {
+                  let tempDeskConfigs = deskConfigurations.Done.Configs.map(
+                    (config) => {
+                      let existingBooking = null;
+                      if (deskConfigurations.Done.ExistingBookings) {
+                        existingBooking =
                           deskConfigurations.Done.ExistingBookings.find(
-                            (booking) => booking.DeskID === desk.ID
+                            (booking) => booking.DeskSpaceEntityID === config.ID
                           );
-  
-                        if (booking) {
-                          desk.color = "#FF0000";
-                          const config = tempDeskConfigs.find(
-                            (config) => config.DeskID === desk.ID
-                          );
-                          if (
-                            config &&
-                            config.ExistingBookings &&
-                            config.ExistingBookings.length < config.Capacity
-                          ) {
-                            desk.color = "#FFA500"; // Orange color
-                          }
+                      }
+
+                      return existingBooking
+                        ? { ...config, ExistingBookings: [existingBooking] }
+                        : config;
+                    }
+                  );
+                  setDeskConfigs(tempDeskConfigs);
+                  setBookings(deskConfigurations.Done.ExistingBookings);
+
+                  let tempDeskConfigsNew = parseDeskData(
+                    deskConfigurations.Done.Configs,
+                    TIME_INTERVALS
+                  );
+
+                  let updatedDesksFromJSON = updateDeskAvailability(
+                    tempDeskConfigsNew,
+                    deskConfigurations.Done.ExistingBookings
+                      ? deskConfigurations.Done.ExistingBookings
+                      : [],
+                    openingTime,
+                    TIME_INTERVALS
+                  );
+
+                  setupdatedDesksFromJSON(updatedDesksFromJSON);
+
+                  if (deskConfigurations.Done.ExistingBookings) {
+                    parsedDesks.forEach((desk) => {
+                      const booking =
+                        deskConfigurations.Done.ExistingBookings.find(
+                          (booking) => booking.DeskID === desk.ID
+                        );
+
+                      if (booking) {
+                        desk.color = "#FF0000";
+                        const config = tempDeskConfigs.find(
+                          (config) => config.DeskID === desk.ID
+                        );
+                        if (
+                          config &&
+                          config.ExistingBookings &&
+                          config.ExistingBookings.length < config.Capacity
+                        ) {
+                          desk.color = "#FFA500"; // Orange color
                         }
-                      });
-                    }
-                    if (deskConfigurations.Done.Amenties) {
-                      setAvailableAmenties(deskConfigurations.Done.Amenties);
-                    }
+                      }
+                    });
                   }
-  
-                  setFloorPlan({
+                  if (deskConfigurations.Done.Amenties) {
+                    setAvailableAmenties(deskConfigurations.Done.Amenties);
+                  }
+                }
+
+                setFloorPlan({
+                  ID: parsedFloorPlan.ID,
+                  Vertices: parsedFloorPlan.Vertices,
+                  startShapePosition: parsedFloorPlan.startShapePosition,
+                  floorName: parsedFloorPlan.FloorPlan_Name,
+                  floorNumber: parsedFloorPlan.Floor_Number,
+                });
+
+                setType("manual");
+                //console.log("image",parsedFloorPlan.FloorPlan_Image);
+                //setImageObj(parsedFloorPlan.FloorPlan_Image);
+                setFloorName(parsedFloorPlan.FloorPlan_Name);
+                setFloorNumber(parsedFloorPlan.Floor_Number);
+                setGridSizeValue(parsedFloorPlan.Grid_Size);
+                setPlotHeight(parsedFloorPlan.Grid_Height);
+                setPlotWidth(parsedFloorPlan.Grid_Width);
+                setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
+                setCreater_Account_ID(Creater_Account_ID);
+
+                if (parsedRooms) {
+                  parsedRooms.forEach((room, index) => {
+                    room.Internal_ID = index;
+                  });
+
+                  setRooms(parsedRooms);
+
+                  const newRoomColors = {};
+                  parsedRooms.forEach((room) => {
+                    newRoomColors[parseInt(room.Internal_ID)] =
+                      getRandomColor();
+                  });
+                  setRoomColors(newRoomColors);
+                }
+
+                if (parsedDesks) {
+                  parsedDesks.forEach((desk, index) => {
+                    desk.Internal_ID = index;
+                  });
+                  setDesks(parsedDesks);
+
+                  const newDeskColors = {};
+                  parsedDesks.forEach((desk) => {
+                    newDeskColors[parseInt(desk.Internal_ID)] = desk.color
+                      ? desk.color
+                      : "#ffffff";
+                  });
+                  setDeskColors(newDeskColors);
+                }
+
+                //save in session storage
+                sessionStorage.setItem(
+                  "FloorPlan",
+                  JSON.stringify({
                     ID: parsedFloorPlan.ID,
                     Vertices: parsedFloorPlan.Vertices,
                     startShapePosition: parsedFloorPlan.startShapePosition,
                     floorName: parsedFloorPlan.FloorPlan_Name,
                     floorNumber: parsedFloorPlan.Floor_Number,
-                  });
-  
-                  setType("manual");
-                  //console.log("image",parsedFloorPlan.FloorPlan_Image);
-                  //setImageObj(parsedFloorPlan.FloorPlan_Image);
-                  setFloorName(parsedFloorPlan.FloorPlan_Name);
-                  setFloorNumber(parsedFloorPlan.Floor_Number);
-                  setGridSizeValue(parsedFloorPlan.Grid_Size);
-                  setPlotHeight(parsedFloorPlan.Grid_Height);
-                  setPlotWidth(parsedFloorPlan.Grid_Width);
-                  setImagePosition(parsedFloorPlan.FloorPlan_Image_Position);
-                  setCreater_Account_ID(Creater_Account_ID);
-  
-                  if (parsedRooms) {
-                    parsedRooms.forEach((room, index) => {
-                      room.Internal_ID = index;
-                    });
-  
-                    setRooms(parsedRooms);
-  
-                    const newRoomColors = {};
-                    parsedRooms.forEach((room) => {
-                      newRoomColors[parseInt(room.Internal_ID)] =
-                        getRandomColor();
-                    });
-                    setRoomColors(newRoomColors);
-                  }
-  
-                  if (parsedDesks) {
-                    parsedDesks.forEach((desk, index) => {
-                      desk.Internal_ID = index;
-                    });
-                    setDesks(parsedDesks);
-  
-                    const newDeskColors = {};
-                    parsedDesks.forEach((desk) => {
-                      newDeskColors[parseInt(desk.Internal_ID)] = desk.color
-                        ? desk.color
-                        : "#ffffff";
-                    });
-                    setDeskColors(newDeskColors);
-                  }
-  
-                  //save in session storage
-                  sessionStorage.setItem(
-                    "FloorPlan",
-                    JSON.stringify({
-                      ID: parsedFloorPlan.ID,
-                      Vertices: parsedFloorPlan.Vertices,
-                      startShapePosition: parsedFloorPlan.startShapePosition,
-                      floorName: parsedFloorPlan.FloorPlan_Name,
-                      floorNumber: parsedFloorPlan.Floor_Number,
-                    })
-                  );
-                  sessionStorage.setItem("GridSize", parsedFloorPlan.Grid_Size);
-                  sessionStorage.setItem(
-                    "GridHeight",
-                    parsedFloorPlan.Grid_Height
-                  );
-                  sessionStorage.setItem("GridWidth", parsedFloorPlan.Grid_Width);
-                  sessionStorage.setItem("rooms", JSON.stringify(parsedRooms));
-                  sessionStorage.setItem("desks", JSON.stringify(parsedDesks));
-                  sessionStorage.setItem("CAI", Creater_Account_ID);
-  
-                  //set the url
-                  // router.replace(
-                  //   {
-                  //     pathname: router.pathname,
-                  //     query: { ...router.query },
-                  //   },
-                  //   undefined,
-                  //   { shallow: true }
-                  // );
-                }
-              } catch (error) {
-                console.error("Error fetching configurations:", error);
+                  })
+                );
+                sessionStorage.setItem("GridSize", parsedFloorPlan.Grid_Size);
+                sessionStorage.setItem(
+                  "GridHeight",
+                  parsedFloorPlan.Grid_Height
+                );
+                sessionStorage.setItem("GridWidth", parsedFloorPlan.Grid_Width);
+                sessionStorage.setItem("rooms", JSON.stringify(parsedRooms));
+                sessionStorage.setItem("desks", JSON.stringify(parsedDesks));
+                sessionStorage.setItem("CAI", Creater_Account_ID);
+
+                //set the url
+                // router.replace(
+                //   {
+                //     pathname: router.pathname,
+                //     query: { ...router.query },
+                //   },
+                //   undefined,
+                //   { shallow: true }
+                // );
               }
+            } catch (error) {
+              console.error("Error fetching configurations:", error);
             }
-          };
-        
-          fetchConfigurations(
-            parsedFloorPlan,
-            openingTime,
-            closingTime,
-            TIME_INTERVALSCOPY
-          );
-        } catch (error) {
-          console.log("Data is not JSON or is invalid JSON", error);
-        }
+          }
+        };
+
+        fetchConfigurations(
+          parsedFloorPlan,
+          openingTime,
+          closingTime,
+          TIME_INTERVALSCOPY
+        );
+      } catch (error) {
+        console.log("Data is not JSON or is invalid JSON", error);
       }
- 
-
-
-  }
+    }
+  };
 
   useEffect(() => {
     SetupData();
-
   }, []);
 
   // Snap a value to the nearest grid point
   const snapToGrid = (value) =>
     Math.round(value / gridSizeValue) * gridSizeValue;
 
-
-
   const bookEntity = async () => {
-    if(Creater_Account_ID){
+    if (Creater_Account_ID) {
       try {
         let selectedCellsObj = selectedCells.sort((a, b) =>
           a.interval.localeCompare(b.interval)
         );
-  
+
         const response = await fetch("/api/newBookingEntity", {
           method: "POST",
           headers: {
@@ -473,7 +464,7 @@ const FloorPlanBooking = () => {
             AccountID: Creater_Account_ID,
           }),
         });
-  
+
         const responseText = await response.text();
         if (!response.ok) {
           throw new Error(
@@ -486,16 +477,30 @@ const FloorPlanBooking = () => {
           setupdatedDesksFromJSON(null);
           setDeskConfigs(null);
           setBookings(null);
-  
+
           setOLDJson(null);
-          
+
           SetupData();
         }
       } catch (error) {
         console.error("Error booking entity:", error);
       }
     }
-   
+  };
+
+  // Add new onChange handler for time intervals
+  const handleTimeIntervalChange = (event, type) => {
+    if (type == "opening") {
+      const selectedInterval = event.target.value;
+      // Update state and notify parent component
+      setselectedOpenInterval(selectedInterval);
+      setOpening_Time(selectedInterval);
+    } else {
+      const selectedInterval = event.target.value;
+      // Update state and notify parent component
+      setselectedCloseInterval(selectedInterval);
+      setselectedCloseInterval(selectedInterval);
+    }
   };
 
   // Pick a random color from 5 predefined colors
@@ -514,7 +519,6 @@ const FloorPlanBooking = () => {
 
   // Handle clicks on the stage
   const handleStageClick = (e) => {
-
     const stage = e.target.getStage();
     const mousePos = stage.getPointerPosition();
     const clickedPosition = {
@@ -588,15 +592,18 @@ const FloorPlanBooking = () => {
       setSelectedRoom(clickedRoom || null);
       if (clickedRoom) {
         if (OLDJson == null) {
+          console.log("1");
           setOLDJson(updatedDesksFromJSON);
-          console.log("heerrrrrre",desks,updatedDesksFromJSON);
+       
           let filteredDesks = updatedDesksFromJSON?.filter(
             (fakeDesk) =>
               desks.find((desk) => desk.ID === fakeDesk.deskId).Room_ID ==
               clickedRoom.ID
           );
+          console.log(filteredDesks);
           setupdatedDesksFromJSON(filteredDesks);
         } else {
+          console.log("2");
           let filteredDesks = OLDJson?.filter(
             (fakeDesk) =>
               desks.find((desk) => desk.ID === fakeDesk.deskId).Room_ID ==
@@ -607,6 +614,8 @@ const FloorPlanBooking = () => {
       } else {
         if (OLDJson) {
           setupdatedDesksFromJSON(OLDJson);
+          setSelectedDesk(null);
+          setSelectedDeskConfig(null);
         }
       }
 
@@ -625,7 +634,6 @@ const FloorPlanBooking = () => {
       }
     }
   };
-
 
   // Scale the image to fit within the plot dimensions
   const scaleImage = (img) => {
@@ -652,7 +660,7 @@ const FloorPlanBooking = () => {
     return inside;
   };
 
- 
+  //console.log(TIME_INTERVALS);
 
   const [tooltip, setTooltip] = useState({
     show: false,
@@ -673,7 +681,7 @@ const FloorPlanBooking = () => {
         item.interval == interval &&
         item.slot == slot
     );
-   
+
     if (isAlreadySelected?.length > 0) {
       let filtered = selectedCells.filter(
         (item) => item !== isAlreadySelected[0]
@@ -688,9 +696,8 @@ const FloorPlanBooking = () => {
         return [...prevSelected, { DeskID: desk.deskId, interval, slot }];
       });
     }
-
   };
- 
+
   return (
     <div
       style={{
@@ -701,7 +708,6 @@ const FloorPlanBooking = () => {
       }}
     >
       <div style={{ display: "flex", flexDirection: "row", height: "100%" }}>
-  
         <div style={{ flex: 1 }}>
           <div
             style={{
@@ -791,32 +797,52 @@ const FloorPlanBooking = () => {
                 top: 30,
                 left: 30,
                 maxHeight: "35px",
-      
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "15px"
-                }}
-              >
-              
-                  <select disabled style={{ padding: '8px 5px 8px 5px', border: '1px solid #ccc', borderRadius: '5px',width:'250px' }}>
-                    <option value="option1">Under Construction</option>
-                    <option value="option2">Option 2</option>
-                    <option value="option3">Option 3</option>
+              {Closing_Time && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    gap: "15px",
+                  }}
+                >
+                  <select
+                    disabled
+                    onChange={(e) => handleTimeIntervalChange(e, "opening")}
+                    style={{
+                      padding: "8px 5px 8px 5px",
+                      border: "1px solid #ccc",
+                      borderRadius: "5px",
+                      width: "250px",
+                    }}
+                    defaultValue={Opening_Time}
+                  >
+                    {TIME_INTERVALS?.map((interval, index) => (
+                      <option key={index} value={interval}>
+                        {interval}
+                      </option>
+                    ))}
                   </select>
-              
-                  <select disabled style={{ padding: '8px 5px 8px 5px', border: '1px solid #ccc', borderRadius: '5px',width:'250px' }}>
-                    <option value="option1">Under Construction</option>
-                    <option value="option2">Option 2</option>
-                    <option value="option3">Option 3</option>
+                  <select
+                    disabled
+                    onChange={(e) => handleTimeIntervalChange(e, "closing")}
+                    style={{
+                      padding: "8px 5px 8px 5px",
+                      border: "1px solid #ccc",
+                      borderRadius: "5px",
+                      width: "250px",
+                    }}
+                    defaultValue={Closing_Time}
+                  >
+                    {TIME_INTERVALS?.map((interval, index) => (
+                      <option key={index} value={interval}>
+                        {interval}
+                      </option>
+                    ))}
                   </select>
-            
-                
-               
-              </div>
+                </div>
+              )}
             </div>
             <div
               style={{
@@ -998,19 +1024,19 @@ const FloorPlanBooking = () => {
                                 let bookings = Bookings?.filter(
                                   (booking) => booking.DeskID === desk.ID
                                 );
-                                bookingsCount = bookings
-                                  ? bookings.length
-                                  : 0;
+                                bookingsCount = bookings ? bookings.length : 0;
                               }
 
-                              context.fillStyle = bookingsCount > 0 ? "orange" : "green";
+                              context.fillStyle =
+                                bookingsCount > 0 ? "orange" : "green";
                               context.globalAlpha = deskOpacity;
                               context.fill();
                               context.strokeStyle = "black";
                               context.lineWidth = 1;
                               context.stroke();
                               context.font = "12px Arial";
-                              context.fillStyle = bookingsCount > 0 ? "black" : "white";
+                              context.fillStyle =
+                                bookingsCount > 0 ? "black" : "white";
                               context.globalAlpha = deskOpacity;
                               context.textAlign = "center";
                               context.textBaseline = "middle";
@@ -1030,7 +1056,7 @@ const FloorPlanBooking = () => {
             </div>
           </div>
         </div>
-        <div style={{ width: "750px" }}>
+        <div style={{ width: "25vw" }}>
           <div
             style={{
               border: "3px solid black",
@@ -1049,167 +1075,188 @@ const FloorPlanBooking = () => {
           >
             <div
               style={{
-                width: "100%",
-                height: "100%",
-                backgroundColor: "#cfcccc",
-                margin: "0 auto",
                 display: "flex",
                 flexDirection: "column",
-                borderRadius: "10px",
+                width: "100%",
+                height: "100%",
               }}
             >
-              <div style={{padding:'15px',paddingBottom:'0px'}}>
-                <h2 style={{fontWeight:'bolder'}}>Current Bookings</h2>
-                <ul style={{height:'100px',overflowY:'scroll'}}>
-                  {Bookings?.sort((a, b) => new Date(a.StartTime) - new Date(b.StartTime)).map((booking) => {
-                    const deskSpaceName = DeskConfigs.find(config => config.DeskID === booking.DeskID)?.Desk_SpaceName || 'Unknown';
-                    const isHighlighted = booking.AccountID === Creater_Account_ID;
-                    return <li key={booking.ID} style={{ fontWeight: isHighlighted ? 'bold' : 'none' }}>{deskSpaceName} - {new Date(booking.StartTime).toLocaleTimeString()} - {new Date(booking.EndTime).toLocaleTimeString()}</li>;
-                  })}
-                </ul>
-              </div>
               <div
                 style={{
-                  height: "auto",
+                  height: "225px",
+
                   display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  padding: "15px",
-                }}
-              >
-                
-                <div className={styles.visualizerContainer}>
-                  {tooltip.show && (
-                    <div
-                      className={styles.tooltip}
-                      style={{
-                        top: `${tooltip.y}px`,
-                        left: `${tooltip.x}px`,
-                      }}
-                    >
-                      {tooltip.content}
-                    </div>
-                  )}
-                  <table className={styles.visualizerTable}>
-                    <thead>
-                      <tr>
-                        <th style={{ width: "50px" }}>Desk</th>
-                        {updatedDesksFromJSON?.map((deskFake) => (
-                          <th
-                            style={
-                              selectedDeskConfig?.DeskID == deskFake.deskId
-                                ? { backgroundColor: "lightblue" }
-                                : {}
-                            }
-                            key={deskFake.deskName}
-                            onClick={() => {
-                              const selectedDesk = desks.find(
-                                (desk) => desk.ID === deskFake.deskId
-                              );
-
-                              setSelectedDesk(selectedDesk);
-                              setSelectedDeskConfig(
-                                DeskConfigs.find(
-                                  (config) => config.DeskID === deskFake.deskId
-                                ) || null
-                              );
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: "100%",
-                                height: "100%",
-
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                              }}
-                            >
-                              {updatedDesksFromJSON.indexOf(deskFake) + 1}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {updatedDesksFromJSON &&
-                        TIME_INTERVALS?.map((interval) => (
-                          <tr key={interval}>
-                            <td>{interval}</td>
-                            {updatedDesksFromJSON.map((desk) => {
-                              const slot = desk.availability[interval];
-
-                              let status =
-                                desk.availability[interval]?.Status ||
-                                "available";
-
-                              let outcome = selectedCells?.filter(
-                                (cell) =>
-                                  cell.DeskID === desk.deskId &&
-                                  cell.slot == slot &&
-                                  cell.interval == interval
-                              );
-                              if (outcome.length > 0) {
-                                status = "selected";
-                              }
-                              return (
-                                <td
-                                  key={desk.deskName}
-                                  className={`${
-                                    styles[`statusCell${status}`]
-                                  } ${
-                                    selectedCells?.filter(
-                                      (cell) => cell.DeskID === desk.ID
-                                    )
-                                      ? styles.selected
-                                      : ""
-                                  }`}
-                                  style={
-                                    selectedDeskConfig?.DeskID == desk.deskId
-                                      ? { opacity:0.75  }
-                                      : {  }
-                                  }
-                                  onMouseLeave={handleMouseLeave}
-                                  onClick={() =>
-                                    handleCellClick(interval, slot, desk)
-                                  }
-                                >
-                                  {slot?.Status === STATUS.PARTIAL
-                                    ? `${slot.SpaceLeft}`
-                                    : ""}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  height: "20%",
-                  minHeight: "190px",
-                  width: "100%",
-                  padding: "15px",
+                  justifyContent: "space-between",
+                  gap: "15px",
                 }}
               >
                 <div
                   style={{
-                    height: "100%", // Take remaining height
+                    width: "50%",
+                    height: "100%",
+                    backgroundColor: "#d3d3d3",
+                    padding: "15px",
+                    borderRadius: "15px",
                   }}
                 >
-                  <button
-                    className={styles.confirmButton}
-                    style={{ width: "100%", marginBottom: "15px" }}
-                    onClick={bookEntity}
-                    disabled={!selectedCells.every(cell => cell.DeskID === selectedCells[0].DeskID)}
-                  >
-                    Confirm Booking
-                  </button>
-                  <div>
-                    {selectedDesk && DeskConfigs && selectedDeskConfig && (
+                  <h2 style={{ fontWeight: "bolder" }}>Current Bookings</h2>
+                  <ul style={{ height: "175px", overflowY: "scroll" }}>
+                    {Bookings?.sort(
+                      (a, b) => new Date(a.StartTime) - new Date(b.StartTime)
+                    ).map((booking) => {
+                      const deskSpaceName =
+                        DeskConfigs.find(
+                          (config) => config.DeskID === booking.DeskID
+                        )?.Desk_SpaceName || "Unknown";
+                      const isHighlighted =
+                        booking.AccountID === Creater_Account_ID;
+                      return (
+                        <li
+                          key={booking.ID}
+                          style={{
+                            fontWeight: isHighlighted ? "none" : "none",
+                          }}
+                        >
+                          {deskSpaceName} -{" "}
+                          {new Date(booking.StartTime).getHours().toString().padStart(2, '0') + ":" + new Date(booking.StartTime).getMinutes().toString().padStart(2, '0')} -{" "}
+                          {new Date(new Date(booking.EndTime).setMinutes(new Date(booking.EndTime).getMinutes() + 30)).getHours().toString().padStart(2, '0') + ":" + new Date(new Date(booking.EndTime).setMinutes(new Date(booking.EndTime).getMinutes() + 30)).getMinutes().toString().padStart(2, '0')}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+                <div
+                  style={{
+                    width: "50%",
+                    backgroundColor: "#d3d3d3",
+                    height: "100%",
+                    padding: "15px",
+                    borderRadius: "15px",
+                  }}
+                >
+                  hi
+                </div>
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  height: "100%",
+                  backgroundColor: "#d3d3d3",
+                  borderRadius: "15px",
+                  marginTop: "15px",
+                }}
+              >
+                <div
+                  style={{
+                    height: "auto",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: "15px",
+                  }}
+                >
+                  <div className={styles.visualizerContainer}>
+                    <table className={styles.visualizerTable}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: "50px" }}>Desk</th>
+                          {updatedDesksFromJSON?.map((deskFake, index) => (
+                            <th
+                              style={
+                                selectedDeskConfig?.DeskID === deskFake.deskId
+                                  ? { backgroundColor: "lightblue" }
+                                  : {}
+                              }
+                              key={deskFake.deskId}
+                              onClick={() => {
+                                const selectedDesk = desks.find(
+                                  (desk) => desk.ID === deskFake.deskId
+                                );
+
+                                setSelectedDesk(selectedDesk);
+                                setSelectedDeskConfig(
+                                  DeskConfigs.find(
+                                    (config) =>
+                                      config.DeskID === deskFake.deskId
+                                  ) || null
+                                );
+                              }}
+                            >
+                              {index + 1}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {updatedDesksFromJSON &&
+                          TIME_INTERVALS?.map((interval) => (
+                            <tr key={interval}>
+                              <td>{interval}</td>
+                              {updatedDesksFromJSON.map((desk) => {
+                                const slot = desk.availability[interval];
+
+                                let status =
+                                  desk.availability[interval]?.Status ||
+                                  "available";
+
+                                let outcome = selectedCells?.filter(
+                                  (cell) =>
+                                    cell.DeskID === desk.deskId &&
+                                    cell.slot === slot &&
+                                    cell.interval === interval
+                                );
+                                if (outcome.length > 0) {
+                                  status = "selected";
+                                }
+                                return (
+                                  <td
+                                    key={`${desk.deskId}-${interval}`}
+                                    className={`${
+                                      styles[`statusCell${status}`]
+                                    } ${
+                                      selectedCells?.filter(
+                                        (cell) => cell.DeskID === desk.deskId
+                                      )
+                                        ? styles.selected
+                                        : ""
+                                    }`}
+                                    style={
+                                      selectedDeskConfig?.DeskID === desk.deskId
+                                        ? { opacity: 0.75 }
+                                        : {}
+                                    }
+                                    onMouseLeave={handleMouseLeave}
+                                    onClick={() =>
+                                      handleCellClick(interval, slot, desk)
+                                    }
+                                  >
+                                    {slot?.Status === STATUS.PARTIAL
+                                      ? `${slot.SpaceLeft}`
+                                      : ""}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    flex:'1',
+   
+                    width: "100%",
+                    padding: "15px",
+                    paddingTop:'0px',
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div style={{ height: "100%" }}>
+                    { (
                       <div
                         style={{
                           display: "flex",
@@ -1217,52 +1264,36 @@ const FloorPlanBooking = () => {
                           textAlign: "left",
                         }}
                       >
-                        <div style={{ Width: "45%" }}>
+                        <div style={{ Width: "50%" }}>
                           <p>
                             <strong>Desk Details</strong>
                           </p>
                           <p>
                             <strong>Name:</strong>{" "}
-                            {selectedDeskConfig.Desk_SpaceName}
+                            {selectedDeskConfig?.Desk_SpaceName ? selectedDeskConfig.Desk_SpaceName : "N/A"}
                           </p>
                           <p>
-                            <strong>Type:</strong> {selectedDeskConfig.Type}
+                            <strong>Type:</strong> {selectedDeskConfig?.Type ? selectedDeskConfig.Type : "N/A"}
                           </p>
                           <p>
                             <strong>Capacity:</strong>{" "}
-                            {selectedDeskConfig.Capacity}
+                            {selectedDeskConfig?.Capacity ? selectedDeskConfig.Capacity : "N/A"}
                           </p>
                         </div>
-                        <div style={{ width: "55%" }}>
+                        {false &&<div style={{ width: "50%" }}>
                           <p>
                             <strong>Amenities:</strong>
-                            <div style={{ display: "flex", flexWrap: "wrap" }}>
-                              {selectedDeskConfig.Amenities.length > 3 ? (
+                            <div
+                              style={{ display: "flex", flexWrap: "wrap" }}
+                            >
+                              
                                 <div
-                                  style={{ display: "flex", flexWrap: "wrap" }}
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                  }}
                                 >
-                                  {selectedDeskConfig.Amenities.map(
-                                    (amenityId) => (
-                                      <div
-                                        key={amenityId}
-                                        style={{ width: "50%" }}
-                                      >
-                                        •{" "}
-                                        {
-                                          AvailableAmenties.find(
-                                            (amenity) =>
-                                              amenity.ID === amenityId
-                                          ).Name
-                                        }
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                              ) : (
-                                <div
-                                  style={{ display: "flex", flexWrap: "wrap" }}
-                                >
-                                  {selectedDeskConfig.Amenities.map(
+                                  {selectedDeskConfig?.Amenities.map(
                                     (amenityId) => (
                                       <div
                                         key={amenityId}
@@ -1270,22 +1301,37 @@ const FloorPlanBooking = () => {
                                       >
                                         •{" "}
                                         {
-                                          AvailableAmenties.find(
+                                          AvailableAmenties?.find(
                                             (amenity) =>
                                               amenity.ID === amenityId
-                                          ).Name
+                                          ).Name ? AvailableAmenties.find(
+                                            (amenity) =>
+                                              amenity.ID === amenityId
+                                          ).Name : "N/A"
                                         }
                                       </div>
                                     )
                                   )}
                                 </div>
-                              )}
+                             
                             </div>
                           </p>
-                        </div>
+                        </div>}
                       </div>
                     )}
                   </div>
+                  <button
+                    className={styles.confirmButton}
+                    style={{ width: "100%" }}
+                    onClick={bookEntity}
+                    disabled={
+                      !selectedCells.every(
+                        (cell) => cell.DeskID === selectedCells[0].DeskID
+                      )
+                    }
+                  >
+                    Confirm Booking
+                  </button>
                 </div>
               </div>
             </div>

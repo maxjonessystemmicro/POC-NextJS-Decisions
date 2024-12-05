@@ -4,10 +4,10 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       console.log('API route: Starting fetch to external API for all desk configs');
-      console.log("hi");
+ 
       // Extract RoomID from query parameters
       const { FloorPlanID } = req.query;
-      console.log("hi");
+
 
       // Construct the URL with RoomID as a query parameter
       const url = new URL("https://decisions-systemmicro.ca/Primary/restapi/Flow/01JBW38Y99XRPR79KQQPYA53AC");
