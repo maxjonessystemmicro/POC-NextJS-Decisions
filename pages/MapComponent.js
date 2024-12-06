@@ -635,6 +635,34 @@ const FloorPlanBooking = () => {
     }
   };
 
+  // Reset the floor plan to its initial state
+  const resetFloorPlan = () => {
+    setFloorPlan(null);
+    setCustomVertices([]);
+    setRooms([]);
+    setCurrentRoom([]);
+    setSelectedRoom(null);
+    setRoomColors({});
+    setType("complete");
+    setDesks([]);
+    setCurrentDesk([]);
+    setSelectedDesk(null);
+
+    setDeskColors({});
+    setDeskIndex(0);
+    setRoomIndex(0);
+    sessionStorage.removeItem("FloorPlan");
+    sessionStorage.removeItem("GridSize");
+    sessionStorage.removeItem("GridHeight");
+    sessionStorage.removeItem("GridWidth");
+    sessionStorage.removeItem("ImageData");
+    sessionStorage.removeItem("SelectedRoom");
+    sessionStorage.removeItem("ImagePosition");
+    sessionStorage.removeItem("IsComplete");
+    sessionStorage.removeItem("rooms");
+    sessionStorage.removeItem("desks");
+  };
+
   // Scale the image to fit within the plot dimensions
   const scaleImage = (img) => {
     const scale = Math.min(plotWidth / img.width, plotHeight / img.height);

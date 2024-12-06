@@ -311,9 +311,6 @@ const SingleFloorPlan = () => {
         }
       } catch (error) {
         console.error("Error creating floor plan:", error);
-        alert(
-          "An error occurred while completing the floor plan. Please check the console for more details."
-        );
       }
     }
   };
@@ -454,7 +451,6 @@ const SingleFloorPlan = () => {
     sessionStorage.removeItem("IsComplete");
     sessionStorage.removeItem("rooms");
     sessionStorage.removeItem("desks");
-    // alert("Floor plan data cleared!");
   };
 
   // Handle image upload and set the image object
