@@ -637,7 +637,7 @@ const SingleFloorPlan = () => {
       sessionStorage.setItem("CAI", Creater_Account_ID);
       sessionStorage.setItem("rooms", JSON.stringify(rooms));
       sessionStorage.setItem("desks", JSON.stringify(desks));
-asd
+
       router.push("/RoomDesigner");
     } else if (selectedDesk) {
       const deskRoom = rooms.find(
