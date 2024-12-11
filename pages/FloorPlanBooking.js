@@ -842,6 +842,7 @@ const FloorPlanBooking = () => {
               </div>
 
               <button
+                className="MyButton"
                 style={{
                   backgroundColor: "#007bff",
                   color: "white",

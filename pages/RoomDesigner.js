@@ -889,10 +889,11 @@ const RoomDesigner = () => {
                   Design Desks
                 </h2>
                 <button
+                  className = {isAddingDesk ? "MyButtonStateTwo" : "MyButton"}
                   onClick={toggleAddDesk}
                   style={{
-                    backgroundColor: isAddingDesk ? "blue" : "darkblue",
-                    color: "white",
+                    //backgroundColor: isAddingDesk ? "blue" : "darkblue",
+                    //color: "white",
                     padding: "11px",
                     marginRight: "10px",
                     borderRadius: "6px",
@@ -905,7 +906,7 @@ const RoomDesigner = () => {
                     onClick={deleteSelectedDesk}
                     disabled={!floorPlan || isDrawingRoom || !rooms.length}
                     style={{
-                      backgroundColor: "purple",
+                      backgroundColor: '#9B3D23',
                       color: "white",
                       padding: "10px",
                       marginRight: "10px",
@@ -1009,11 +1010,10 @@ const RoomDesigner = () => {
                   )}
                 </div>
                 <button
+                className="MyButton"
                   onClick={saveDeskConfig}
                   disabled={!selectedDesk}
                   style={{
-                    backgroundColor: "purple",
-                    color: "white",
                     padding: "10px",
                     marginRight: "10px",
                     borderRadius: "6px",
@@ -1080,9 +1080,8 @@ const RoomDesigner = () => {
             >
               <button
                 onClick={saveDesks}
+                className="MyButtonAlternateColor"
                 style={{
-                  backgroundColor: "darkblue",
-                  color: "white",
                   padding: "15px",
                   flex: 1,
                   marginLeft: "5px",
@@ -1093,9 +1092,8 @@ const RoomDesigner = () => {
               </button>{" "}
               <button
                 onClick={backButton}
+                className="MyButtonAlternateColor"
                 style={{
-                  backgroundColor: "darkblue",
-                  color: "white",
                   padding: "15px",
                   flex: 1,
                   marginLeft: "5px",

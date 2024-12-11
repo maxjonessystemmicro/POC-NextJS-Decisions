@@ -506,7 +506,7 @@ const FloorPlanBooking = () => {
   // Pick a random color from 5 predefined colors
   const getRandomColor = () => {
     const predefinedColors = [
-      "#D3D3D3",
+      theme('colors.silverlakeblue'),
       "#E5E5EA",
       "#F0F0F0",
       "#F5F5DC",
@@ -514,6 +514,7 @@ const FloorPlanBooking = () => {
     ];
     return predefinedColors[
       Math.floor(Math.random() * predefinedColors.length)
+      //theme('colors.silverlakeblue')
     ];
   };
 

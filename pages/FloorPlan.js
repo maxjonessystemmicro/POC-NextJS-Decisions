@@ -322,7 +322,7 @@ const SingleFloorPlan = () => {
     for (let i = 0; i < 6; i++) {
       color += letters[Math.floor(Math.random() * 16)];
     }
-    return color;
+    return "#5C99A8";
   };
 
   // Handle clicks on the stage
@@ -770,10 +770,10 @@ const SingleFloorPlan = () => {
                             : context.lineTo(vertex.x, vertex.y);
                         });
                         context.closePath();
-                        context.fillStyle = `rgba(173, 216, 230, ${floorPlanOpacity})`;
+                        context.fillStyle = `rgba(100, 139, 188, ${floorPlanOpacity})`;
                         context.fill();
                         context.strokeWidth = 4;
-                        context.strokeStyle = "blue";
+                        context.strokeStyle = "#2A306E";
 
                         context.stroke();
                       }}
@@ -839,7 +839,7 @@ const SingleFloorPlan = () => {
                       x={vertex.x}
                       y={vertex.y}
                       radius={5}
-                      fill="green"
+                      fill="#2A306E"
                     />
                   ))}
                   {currentRoom.map((vertex, index) => {
@@ -853,7 +853,7 @@ const SingleFloorPlan = () => {
                             currentRoom[index + 1].x,
                             currentRoom[index + 1].y,
                           ]}
-                          stroke="green"
+                          stroke="#2A306E"
                           strokeWidth={2}
                         />
                       );
@@ -1059,13 +1059,14 @@ const SingleFloorPlan = () => {
                 </div>
 
                 <button
+                  className="MyButton"
                   onClick={toggleCustomRoom}
                   style={{
-                    backgroundColor: "green",
-                    color: "white",
+                    //backgroundColor: "green",
+                    //color: "white",
                     padding: "10px",
                     width: "100%",
-                    borderRadius: "6px",
+                    //borderRadius: "6px",
                   }}
                   disabled={
                     !floorName || floorPlan || isDrawingRoom || isAddingDesk
@@ -1198,24 +1199,25 @@ const SingleFloorPlan = () => {
 
 
               <button
+                className="MyButton"
                 onClick={resetFloorPlan}
                 style={{
-                  backgroundColor: "Orange",
-                  color: "white",
+                  //backgroundColor: "Orange",
+                  //color: "white",
                   padding: "10px",
                   marginRight: "10px",
-                  borderRadius: "6px",
+                  //borderRadius: "6px",
                 }}
                 disabled={isDrawingRoom || isAddingDesk}
               >
                 Reset
               </button>
               <button
+                className="MyButton"
                 onClick={() => moveImage(0, -0.1)}
                 style={{
                   margin: "5px",
                   padding: "10px",
-                  background: "lightgrey",
                   border: "none",
                   borderRadius: "6px",
                   lineHeight: "12px",
@@ -1224,11 +1226,11 @@ const SingleFloorPlan = () => {
                 ↑
               </button>
               <button
+                className="MyButton"
                 onClick={() => moveImage(0.1, 0)}
                 style={{
                   margin: "5px",
                   padding: "10px",
-                  background: "lightgrey",
                   border: "none",
                   borderRadius: "6px",
                   lineHeight: "12px",
@@ -1237,11 +1239,11 @@ const SingleFloorPlan = () => {
                 →
               </button>
               <button
+                className="MyButton"
                 onClick={() => moveImage(-0.1, 0)}
                 style={{
                   margin: "5px",
                   padding: "10px",
-                  background: "lightgrey",
                   border: "none",
                   borderRadius: "6px",
                   lineHeight: "12px",
@@ -1250,11 +1252,11 @@ const SingleFloorPlan = () => {
                 ←
               </button>
               <button
+                className="MyButton"
                 onClick={() => moveImage(0, 0.1)}
                 style={{
                   margin: "5px",
                   padding: "10px",
-                  background: "lightgrey",
                   border: "none",
                   borderRadius: "6px",
                   lineHeight: "12px",
@@ -1262,7 +1264,10 @@ const SingleFloorPlan = () => {
               >
                 ↓
               </button>
-              <div>
+              <div
+                style={{
+                  paddingTop: "15px",
+                }}>
              {rawopeningTime && <TimeDropdowns Opening_Time={rawopeningTime} Closing_Time={rawclosingTime} onTimeChange={handleTimeChange}/>}
              {!rawopeningTime && <TimeDropdowns onTimeChange={handleTimeChange}/>}
               </div>
@@ -1270,7 +1275,7 @@ const SingleFloorPlan = () => {
 
             <div
                 style={{
-                  backgroundColor: "#384A8E",
+                  //backgroundColor: "#384A8E",
                   padding: "15px",
                   zIndex: 0,
                   paddingBottom: "10px",
@@ -1280,10 +1285,11 @@ const SingleFloorPlan = () => {
                   Design Rooms
                 </h2>
                 <button
+                  className={isDrawingRoom ? "MyButtonStateTwo" : "MyButton"}
                   onClick={toggleDrawRoom}
                   style={{
-                    backgroundColor: isDrawingRoom ? "darkgreen" : "darkblue",
-                    color: "white",
+                    //backgroundColor: isDrawingRoom ? "#198be5" : "#198be5",
+                    //color: "white",
                     padding: "10px",
                     marginRight: "10px",
                     borderRadius: "6px",
@@ -1295,6 +1301,7 @@ const SingleFloorPlan = () => {
                 </button>
                 {selectedRoom && (
                   <button
+                    className="MyButton"
                     onClick={deleteSelectedRoom}
                     style={{
                       backgroundColor: "purple",
@@ -1310,10 +1317,11 @@ const SingleFloorPlan = () => {
                 )}
                 {(selectedRoom || selectedDesk) && (
                   <button
+                    className="MyButton"
                     onClick={handleEditRoom}
                     style={{
-                      backgroundColor: "green",
-                      color: "white",
+                      //backgroundColor: "green",
+                      //color: "white",
                       padding: "10px",
                       margin: "10px 0",
                       borderRadius: "6px",
@@ -1333,10 +1341,11 @@ const SingleFloorPlan = () => {
               }}
             >
               <button
+                className="MyButtonAlternateColor"
                 onClick={completeFloor}
                 style={{
-                  backgroundColor: "darkblue",
-                  color: "white",
+                  //backgroundColor: "darkblue",
+                  //color: "white",
                   padding: "15px",
                   flex: 1,
                   marginRight: "5px",
@@ -1346,10 +1355,11 @@ const SingleFloorPlan = () => {
                 {type === "complete" ? "Complete" : "Save"}
               </button>
               <button
+                className="MyButtonAlternateColor"
                 onClick={backButton}
                 style={{
-                  backgroundColor: "darkblue",
-                  color: "white",
+                  //backgroundColor: "darkblue",
+                  //color: "white",
                   padding: "15px",
                   flex: 1,
                   marginLeft: "5px",
