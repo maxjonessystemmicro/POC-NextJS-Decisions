@@ -261,6 +261,40 @@ const SingleFloorPlan = () => {
     window.history.back();
   };
 
+
+  const fetchFloorPlanImage = async () => {
+    if (floorPlan.ID){
+      try {
+        const response = await fetch(
+          `/api/fetchFloorPlanImage?FloorPlanID=${floorPlan.ID}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          
+          }
+        );
+
+        const responseText = await response.text();
+
+        if (!response.ok) {
+          throw new Error(
+            `Network response was not ok: ${response.status} ${response.statusText}\n${responseText}`
+          );
+        } else {
+          //convert response text to floorplan object
+          const responseFloorPlan = JSON.parse(responseText);
+          const img = new Image();
+          img.src = `data:image/png;base64,${responseFloorPlan.Done.ImageData.Contents}`;
+          setImageObj(img);
+        }
+      } catch (error) {
+        console.error("Error creating floor plan:", error);
+      }
+    }
+  }
+
   // Complete the floor plan and send data to the server
   const completeFloor = async () => {
     if (desks && floorName && Creater_Account_ID) {
@@ -285,8 +319,9 @@ const SingleFloorPlan = () => {
                 Grid_Height: plotHeight,
                 Grid_Width: plotWidth,
                 FloorPlan_Image_Position: imagePosition,
-                Opening_Time: openingTime,
-                Closing_Time: closingTime
+                FloorPlan_Image: image ? {Id:345345345,FileName:'uploadedFile.png',Contents:image.split(';base64,')[1]} : null,
+                Opening_Time: openingTime ? openingTime :new Date(rawopeningTime),
+                Closing_Time: closingTime ? closingTime : new Date(rawclosingTime),
               },
               Rooms: rooms,
             }),
@@ -1209,6 +1244,19 @@ const SingleFloorPlan = () => {
                 disabled={isDrawingRoom || isAddingDesk}
               >
                 Reset
+              </button>
+              <button
+                onClick={fetchFloorPlanImage}
+                style={{
+                  backgroundColor: "Purple",
+                  color: "white",
+                  padding: "10px",
+                  marginRight: "10px",
+                  borderRadius: "6px",
+                }}
+                disabled={isDrawingRoom || isAddingDesk}
+              >
+                Fetch
               </button>
               <button
                 onClick={() => moveImage(0, -0.1)}

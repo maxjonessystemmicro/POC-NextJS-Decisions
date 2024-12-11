@@ -42,11 +42,11 @@ const FloorPlanBooking = () => {
   const [floorNumber, setFloorNumber] = useState(1);
   const [AvailableAmenties, setAvailableAmenties] = useState(null);
   const [imageObj, setImageObj] = useState(null);
-  const [imageOpacity, setImageOpacity] = useState(1);
+  const [imageOpacity, setImageOpacity] = useState(0.9);
   const [gridOpacity, setGridOpacity] = useState(0.5);
-  const [floorPlanOpacity, setFloorPlanOpacity] = useState(0.3);
-  const [roomOpacity, setRoomOpacity] = useState(0.5);
-  const [deskOpacity, setDeskOpacity] = useState(0.75);
+  const [floorPlanOpacity, setFloorPlanOpacity] = useState(0.1);
+  const [roomOpacity, setRoomOpacity] = useState(0.3);
+  const [deskOpacity, setDeskOpacity] = useState(0.9);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [roomColors, setRoomColors] = useState({});
   const [isAddingDesk, setIsAddingDesk] = useState(false);
@@ -259,6 +259,11 @@ const FloorPlanBooking = () => {
                 );
               } else {
                 const deskConfigurations = JSON.parse(responseText);
+                if (deskConfigurations.Done.FloorPlan_Image.Contents) {
+                  const img = new Image();
+                  img.src = `data:image/png;base64,${deskConfigurations.Done.FloorPlan_Image.Contents}`;
+                  setImageObj(img);
+                }
                 if (deskConfigurations.Done.Configs) {
                   let tempDeskConfigs = deskConfigurations.Done.Configs.map(
                     (config) => {
@@ -635,34 +640,6 @@ const FloorPlanBooking = () => {
     }
   };
 
-  // Reset the floor plan to its initial state
-  const resetFloorPlan = () => {
-    setFloorPlan(null);
-    setCustomVertices([]);
-    setRooms([]);
-    setCurrentRoom([]);
-    setSelectedRoom(null);
-    setRoomColors({});
-    setType("complete");
-    setDesks([]);
-    setCurrentDesk([]);
-    setSelectedDesk(null);
-
-    setDeskColors({});
-    setDeskIndex(0);
-    setRoomIndex(0);
-    sessionStorage.removeItem("FloorPlan");
-    sessionStorage.removeItem("GridSize");
-    sessionStorage.removeItem("GridHeight");
-    sessionStorage.removeItem("GridWidth");
-    sessionStorage.removeItem("ImageData");
-    sessionStorage.removeItem("SelectedRoom");
-    sessionStorage.removeItem("ImagePosition");
-    sessionStorage.removeItem("IsComplete");
-    sessionStorage.removeItem("rooms");
-    sessionStorage.removeItem("desks");
-  };
-
   // Scale the image to fit within the plot dimensions
   const scaleImage = (img) => {
     const scale = Math.min(plotWidth / img.width, plotHeight / img.height);
@@ -769,6 +746,19 @@ const FloorPlanBooking = () => {
                   gap: "10px",
                 }}
               >
+                <div>
+                  <label>Image Opacity: </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={imageOpacity}
+                    onChange={(e) =>
+                      setImageOpacity(parseFloat(e.target.value))
+                    }
+                  />
+                </div>
                 <div>
                   <label>Grid Opacity: </label>
                   <input
