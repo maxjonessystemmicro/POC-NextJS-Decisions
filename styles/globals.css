@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/*css color palette
+
+--delft-blue: #2A306Eff;
+--ruddy-blue: #5CA8EBff;
+--silver-lake-blue: #648BBCff;
+--yinmn-blue: #26508Fff;
+--gamboge: #E59C22ff;
+--chestnut: #9B3D23ff;
+--moonstone: #5C99A8ff;
+--platinum: #D6D7D8ff;
+*/
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -37,4 +49,625 @@ select {
 select option {
   color: black;
   background-color: white;
+}
+
+/*Decisions styling */
+
+.MyLabel
+{
+        border: 1px solid green;
+    Border-radius: 10px;
+   padding: 5px 10px 5px 10px;
+    Background : white;
+    color: blue;
+    font-family: times new roman;
+    font-size: 14px;
+   text-align: center;
+}
+
+/* OR */
+
+.form-surface-view .silverLabel
+{
+    border: 1px solid green;
+    Border-radius: 10px;
+    padding: 5px 10px 5px 10px;
+    background: White;
+   color: blue;
+    font-family: times new roman;
+    font-size: 14px;
+   Text-align: center;
+}
+
+.MyButton
+{
+    border-radius: 10px;
+    font-weight: bold;
+    color: white;
+    background-color: theme('colors.ruddyblue');
+    color: white;
+    border: 1px solid blue;
+    font-size: 16px;
+}
+
+.MyButtonAlternateColor
+{
+    border-radius: 10px;
+    font-weight: bold;
+    color: white;
+    background-color: theme('colors.yinmnblue');
+    color: white;
+    border: 1px solid theme('colors.yinmnblue');
+    font-size: 16px;
+}
+
+.MyButtonStateTwo
+{
+    border-radius: 10px;
+    font-weight: bold;
+    color: white;
+    background-color: theme('colors.moonstone');
+    color: white;
+    border: 1px solid blue;
+    font-size: 16px;
+}
+
+.MyIconButton
+{
+    margin: "5px";
+    padding: "10px";
+    font-weight: bold;
+    background-color: lightgrey;
+    color: black;
+    border: none;
+    border-radius: 6px;
+    line-height: 12px;
+
+}
+
+/* .MyButton:hover - To change background-color to light yellow and text to blue color. */
+
+.MyButton:hover
+{
+        background-color: lightgrey; /*light yellow*/
+     color: black;
+}
+
+/* OR */
+
+.form-surface-view .buttonControl
+{
+    border-radius: 10px;
+    font-weight: bold;
+    background-color: aqua;
+    color: black;
+    border: 1px solid yellow;
+    font-style: italic;
+    font-size: 14px;
+    opacity: 0.5;
+}
+
+.form-surface-view .buttonControl:hover
+{
+    background-color: #ffffcc; /*light yellow*/
+    color: blue;
+}
+
+.MyCloseButton
+{
+border: 1px solid black;
+    background: red !important;
+font-style: italic;
+font-weight: bold;
+font-family: times new roman;
+    color: white;
+border-radius: 10px;
+}
+
+/* OR */
+
+.form-surface-view .SilverButtonStyle input[type="button"]
+{
+        border: 1px solid black;
+    background: red !important;
+font-style: italic;
+font-weight: bold;
+font-family: times new roman;
+    color: white;
+border-radius: 10px;
+}
+
+.MyLinkButton
+{
+    background: #99ccff; /*Light Blue*/
+font-style: normal;
+font-weight: bold;
+color: black;
+   text-decoration: underline;
+   height: 25px;
+   width: 100px;
+}
+
+/* OR */
+
+.form-surface-view .SilverHyperLinkButtonStyle .buttonControl
+{
+    background: #99ccff; /*Light Blue*/
+font-style: normal;
+font-weight: bold;
+color: black;
+   text-decoration: underline;
+   height: 25px;
+   width: 100px;
+}
+
+.MyImage
+{
+        background-repeat: no-repeat;
+        width: 300px;
+        height: 163px;
+        border: 2px solid black;
+        border-radius: 10px;
+}
+
+/* OR */
+
+.form-surface-view img
+{
+        background-repeat: no-repeat;
+        width: 300px;
+        height: 163px;
+        border: 2px solid black;
+        border-radius: 10px;
+}
+
+/* MyNavigationTree: Curve corner border by 5px, border width to 2px solid, and color to black. */
+
+.MyNavigationTree
+{
+        border-radius: 5px;
+    border: 2px solid black;
+}
+
+/* OR */
+
+.form-surface-view .Commonscroll
+{
+  border-radius: 5px;
+  border: 2px solid black;
+}
+
+
+/* MyNavigationText: font family to Times New Roman, font size to 14px, font style to normal. */
+
+.MyNavigationText
+{
+        font-family: times new roman;
+        font-size: 14px;
+        font-style: normal;
+}
+
+/* OR */
+
+.form-surface-view .jstree-no-icons li
+{
+        font-family: times new roman;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: normal;
+    color: black;
+}
+
+
+/* MyNavigationText : Hover
+      Increase font size to 16px, font style to bold , font family to Arial. */
+
+.MyNavigationText:hover
+{
+    font-size: 16px;
+    font-style: bold;
+    font-family: arial;
+}
+
+/* OR */
+
+.form-surface-view .jstree-no-icons .jstree-leaf :hover
+{
+    font-size: 15px;
+font-weight: bold;
+}
+
+/* .MyTagEditorControlCss: Change Border width to 2px solid and green color, font family to Times New Roman, font size to 14px, background color to white and text to black. */
+
+.MyTagEditorControlCss
+{
+    border: 2px solid green;
+    font-family: times new roman;
+    font-size: 14px;
+    background-color: white;
+    color: black;
+}
+
+/* OR */
+
+.form-surface-view .compactTagView
+{
+    border: 2px solid green;
+    font-family: times new roman;
+    font-size: 14px;
+    background-color: white;
+    color: black;
+}
+
+/* .MyTagEditorTextBoxCss - Change background color to little yellow, text color to black, size to 16px, font style to normal, font family to Times New Roman, font to bold. */
+
+.MyTagEditorTextBoxCss
+{
+    background-color: #ffffe6;/*light yellow*/
+    color: black;
+    font-size: 16px;
+    font-style: normal;
+   font-family: times new roman;
+   font-weight: bold;
+}
+
+/* OR */
+
+.form-surface-view .blinktext
+{
+    background-color: #ffffe6;/*light yellow*/
+    color: black;
+    font-size: 16px;
+    font-style: normal;
+   font-family: times new roman;
+   font-weight: bold;
+}
+
+
+/* .MyTagEditorButtonCss - Change border width by 1px  solid and color to blue, background color to grey, text size to 14px, text color to black, curve corner border by 3px. */
+
+.MyTagEditorButtonCss
+{
+    border: 1px solid blue;
+    background-color: grey;
+    color: black;
+    font-size: 14px;
+    border-radius: 3px;
+}
+
+/* OR */
+
+.form-surface-view .compact-tag-view-drop-down-arrow
+{
+    border: 1px solid blue;
+    background-color: grey;
+    color: black;
+    font-size: 14px;
+    border-radius: 3px;
+}
+
+
+/* .MyTagEditorDropDownListCss - Change border width to 1px solid & black color, font style Times New Romen, font size to 16px, font to bold. */
+
+.MyTagEditorDropDownListCss
+{
+        border: 1px solid black;
+   font-family: times new roman;
+  font-size: 14px;
+font-weight: bold;
+}
+
+/* OR */
+
+.form-surface-view .compactTagSuggestions
+{
+border: 1px solid black;
+   font-family: times new roman;
+  font-size: 14px;
+        font-weight: bold;
+}
+
+.MyTextbox
+{
+        border: none;
+    background-color: white;
+    color: black;
+    font-size: 14px;
+    font-style: normal;
+    box-shadow: 0 0 7px #198be5;
+}
+
+/* OR */
+
+.form-surface-view .silvertextbox input
+{
+        border: none;
+    background-color: white;
+    color: black;
+    font-size: 14px;
+    font-style: normal;
+    box-shadow: 0 0 7px #198be5;
+}
+
+.MyMaskedTextbox
+{
+        border-radius: 10px;
+    font-family: times new roman;
+    font-size: 14px;
+   width: 250px;
+}
+
+/* OR */
+
+.form-surface-view .passwordBox
+{
+        border-radius: 10px;
+    font-family: times new roman;
+    font-size: 14px;
+    width: 250px;
+}
+
+/* MyDatePicker CSS to change border width to 1px and  color to light yellow, curve corner border by 12px. */
+
+.MyDatePicker
+{
+        border: 1px solid #ffffcc;
+    Border-radius: 12px;
+}
+
+/* OR */
+
+.form-surface-view .calendar
+{
+        border: 1px solid #ffffcc; /*light yellow*/
+    border-radius: 12px;
+}
+
+/* .MyDatePickerTextbox - Change text color to blue, text size to 16px, text style to normal, width to 125px. */
+
+.MyDatePickerTextbox
+{
+        color: #6666ff;
+    font-size: 16px;
+    font-style: normal;
+    width: 125px;
+}
+
+/* OR */
+
+.form-surface-view .datePickerInput
+{
+        color: #6666ff;
+    font-size: 16px;
+    font-style: normal;
+    width: 125px;
+}
+
+/* .MyDatePickerButton - To change border width to 1px solid and color to black, curve the border by 5px. */
+.MyDatePickerButton
+{
+        border: 1px solid black;
+border-radius: 2px;
+}
+
+/* OR */
+
+.form-surface-view .silverdatePickerIcon
+{
+        border: 1px solid black;
+border-radius: 2px;
+}
+
+.MyRadioButtonList
+{
+        border-radius: 12px;
+    margin-bottom: 6px;
+padding: 5px;
+    background-color: yellow;
+}
+
+/* OR */
+
+.form-surface-view .SilverRadioButtonsControl
+{
+        border-radius: 12px;
+    margin-bottom: 6px;
+    padding: 5px;
+    background-color: yellow;
+}
+
+.MyListBox
+{
+        font-family: times new roman;
+    font-size: 14px;
+    font-style: normal;
+    border: 1px solid;
+    border-radius: 5px;
+}
+
+/* OR */
+
+.form-surface-view .SilverLinkList li
+{
+        font-family: times new roman;
+    font-size: 14px;
+    font-style: normal;
+    border: 1px solid;
+    border-radius: 5px;
+}
+
+/* .MyDropDownListControl: Change border width to 1px solid and color to black, curve corner border by 5px. */
+
+.MyDropDownListControl
+{
+        border: 1px solid black;
+    border-radius: 5px;
+}
+
+/* OR */
+
+.form-surface-view .commondropdown
+{
+        border: 1px solid black;
+        border-radius: 5px;
+}
+
+/* MyDropDownList - Change background color to shade of green, text size to 18px, text style to normal, change cursor icon to pointer, text color to aqua. */
+
+.MyDropDownList
+{
+        background-color: white;
+  font-size: 18px;
+  font-style: normal;
+  cursor: pointer;
+    color: black;
+}
+
+/* OR */
+
+.form-surface-view .Combo-list-sub
+{
+        background-color: #ccffcc;
+    font-size: 18px;
+    font-style: normal;
+    cursor: pointer;
+    color: aqua;
+}
+
+
+/* .MyDropDownListTextbox - To change background color to white, text color to black, text size to 14px, text style to normal, remove border and add shadow of blue color. */
+
+.MyDropDownListTextbox
+{
+        border: none;
+        background-color: white;
+    color: black;
+   font-size: 14px;
+    font-style: normal;
+    box-shadow: 0 0 7px #198be5;
+}
+
+/* OR */
+
+.form-surface-view .commondropdowninput input
+{
+        border: none;
+    background-color: white;
+    color: black;
+    font-size: 14px;
+    font-style: normal;
+    box-shadow: 0 0 7px #198BE5;
+}
+
+
+/* .MyDropDownListButton - To change background color to shade of green, text color to aqua, remove border and add shadow of blue color. */
+
+.MyDropDownListButton
+{
+        border: none;
+    background-color: #ccff99;
+    color: aqua;
+        box-shadow: 0 0 10px #198be5;
+}
+
+OR
+
+.form-surface-view .common-dropdown-Arrow
+{
+        border: none;
+background-color: orange;
+font-size: 14px;
+}
+
+.MyCheckBoxList
+{
+        border: 1px solid black;
+border-radius: 9px;
+padding: 5px;
+font-family: courier new;
+font-size: 14px;
+background-color: #ffffcc;
+}
+
+/* OR */
+
+.form-surface-view .SilverCheckBoxList
+{
+        border: 1px solid black;
+border-radius: 9px;
+padding: 5px;
+font-family: courier new;
+font-size: 14px;
+background-color: #ffffcc;
+}
+
+/* MyLinkListItem CSS to change background color to light grey, add space between two link list item. */
+
+.MyLinkListItem
+{
+background-color: #e6e6e6;
+        padding: 3px;
+}
+
+/* OR */
+
+.form-surface-view .SilverLinkListItem
+{
+        background-color: #e6e6e6;
+padding: 3px;
+}
+
+/* .MyLinkListText - Change text family to Courier New, text size to 16px, text style to normal. */
+
+.MyLinkListText
+{
+        font-family: courier new;
+font-size: 16px;
+font-style: normal;
+}
+
+/*OR */
+
+.form-surface-view .SilverLinkListItemText
+{
+        font-family: times new roman;
+font-size: 16px;
+font-style: normal;
+}
+
+
+/* .MyLinkListLinks - To change text family to Times New Roman and text size to 16px, text to Oblique. */
+
+.MyLinkListLinks
+{
+        font-family: times new roman;
+font-size: 16px;
+font-style: oblique;
+}
+
+/* OR */
+
+.form-surface-view .SilverLinkListItem
+{
+        font-family: times new roman;
+font-size: 16px;
+font-style: oblique;
+}
+
+.MySortableCheckBoxList
+{
+        border-radius: 10px;
+    padding: 5px;
+    background-color: azure;
+   margin: 2px;
+}
+
+/* OR */
+
+.form-surface-view .SortableCheckBoxMain
+{
+        border-radius: 10px;
+    padding: 5px;
+    background-color: azure;
+    margin: 2px;
 }

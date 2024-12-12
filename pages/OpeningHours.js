@@ -62,6 +62,7 @@ const TimeDropdowns = ({ onTimeChange, Opening_Time, Closing_Time}) => {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <label htmlFor="openingTime" style={{ fontWeight: "bold" }}>Opening Time:</label>
         <select
+        className="MyDropDownList"
         id="openingTime"
         value={openingTime}
         onChange={handleOpeningChange}
@@ -84,6 +85,7 @@ const TimeDropdowns = ({ onTimeChange, Opening_Time, Closing_Time}) => {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <label htmlFor="closingTime" style={{ fontWeight: "bold" }}>Closing Time:</label>
         <select
+        className="MyDropDownList"
         id="closingTime"
         value={closingTime}
         onChange={handleClosingChange}
