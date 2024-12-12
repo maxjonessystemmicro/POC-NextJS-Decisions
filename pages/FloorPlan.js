@@ -159,7 +159,7 @@ const SingleFloorPlan = () => {
     
           const newDeskColors = {};
           parsedDesks.forEach((desk) => {
-            newDeskColors[parseInt(desk.Internal_ID)] = getRandomColor();
+            newDeskColors[parseInt(desk.Internal_ID)] = "#26508F";
           });
           setDeskColors(newDeskColors);
         }

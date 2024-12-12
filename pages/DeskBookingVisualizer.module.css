@@ -53,15 +53,15 @@
 }
 
 .statusCellavailable {
-  background-color: #4CAF50 !important; /* Green for available */
+  background-color: #48A051ff !important; /* Green for available */
 }
 
 .statusCellbooked {
-  background-color: #FF5722 !important; /* Red for booked */
+  background-color: #9B3D23 !important; /* Red for booked */
 }
 
 .statusCellpartial {
-  background-color: #FFC107 !important; /* Yellow for partial */
+  background-color: #E59C22 !important; /* Yellow for partial */
 }
 
 .statusCellselected {

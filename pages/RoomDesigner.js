@@ -132,7 +132,7 @@ const RoomDesigner = () => {
       // If you have a rooms state, update it as well
       setRooms([centeredRoom]);
       setRoomColors({
-        [centeredRoom.Internal_ID]: getRandomColor(),
+        [centeredRoom.Internal_ID]: "#26508F",
       });
 
       // If you have desks, center them too
@@ -372,7 +372,7 @@ const RoomDesigner = () => {
     for (let i = 0; i < 6; i++) {
       color += letters[Math.floor(Math.random() * 16)];
     }
-    return color;
+    return "#26508F";
   };
 
   // Handle clicks on the stage

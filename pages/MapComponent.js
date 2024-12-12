@@ -510,8 +510,7 @@ const FloorPlanBooking = () => {
 
   // Pick a random color from 5 predefined colors
   const getRandomColor = () => {
-    const predefinedColors = [
-      theme('colors.silverlakeblue'),
+    /*const predefinedColors = [
       "#E5E5EA",
       "#F0F0F0",
       "#F5F5DC",
@@ -520,7 +519,8 @@ const FloorPlanBooking = () => {
     return predefinedColors[
       Math.floor(Math.random() * predefinedColors.length)
       //theme('colors.silverlakeblue')
-    ];
+    ];*/
+    return "#5C99A8";
   };
 
   // Handle clicks on the stage
@@ -1047,7 +1047,7 @@ const FloorPlanBooking = () => {
                               }
 
                               context.fillStyle =
-                                bookingsCount > 0 ? "orange" : "green";
+                                bookingsCount > 0 ? '#E59C22' : '#5C99A8ff';
                               context.globalAlpha = deskOpacity;
                               context.fill();
                               context.strokeStyle = "black";
@@ -1302,8 +1302,8 @@ const FloorPlanBooking = () => {
               </div>
 
               <button
-                className={styles.confirmButton}
-                style={{ width: "100%" }}
+                className="MyButton"
+                style={{ width: "100%", height: "25%", marginTop: "3%" }}
                 onClick={bookEntity}
                 disabled={
                   !selectedCells.every(
