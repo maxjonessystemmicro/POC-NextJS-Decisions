@@ -732,7 +732,7 @@ const FloorPlanBooking = () => {
       style={{
         width: "100vw",
         height: "100vh",
-        backgroundColor: "#d4d4d4",
+        backgroundColor: "#D6D7D8ff",
         padding: "15px",
       }}
     >
